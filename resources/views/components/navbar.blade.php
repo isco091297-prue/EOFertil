@@ -4,7 +4,7 @@
 
         <h2 class="text-xl font-semibold">
 
-            Panel Administrativo
+            ERP EOFertil
 
         </h2>
 
@@ -18,9 +18,7 @@
 
         </span>
 
-        <form
-            action="{{ route('logout') }}"
-            method="POST">
+        <form action="{{ route('logout') }}" method="POST">
 
             @csrf
 
