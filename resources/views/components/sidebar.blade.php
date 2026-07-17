@@ -30,7 +30,7 @@
 
         <x-menu-item route="crops.index" icon="🌱" label="Cultivos" />
 
-        <x-menu-item route="#" icon="📂" label="Categorías" />
+        <x-menu-item route="categories.index" icon="📂" label="Categorías" />
 
         <x-menu-item route="#" icon="⚠️" label="Problemas" />
 

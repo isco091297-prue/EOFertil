@@ -8,6 +8,8 @@ use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\ZoneController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CropController;
+use App\Http\Controllers\CategoryController;
+
 
 Route::middleware('guest')->group(function () {
 
@@ -29,6 +31,7 @@ Route::middleware(['auth', 'admin', 'nocache'])->group(function () {
     Route::resource('zones', ZoneController::class);
     Route::resource('branches', BranchController::class);
     Route::resource('crops', CropController::class);
+    Route::resource('categories', CategoryController::class);
     Route::post('/logout', [LoginController::class, 'logout'])
         ->name('logout');
 });
