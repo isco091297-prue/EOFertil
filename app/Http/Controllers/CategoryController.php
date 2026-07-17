@@ -49,8 +49,7 @@ class CategoryController extends Controller
 
     public function show(Category $category)
     {
-        return redirect()->route('categories.index');
-    }
+return view('categories.show', compact('category'));    }
 
     public function edit(Category $category)
     {
