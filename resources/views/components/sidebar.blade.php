@@ -28,7 +28,7 @@
 
         </div>
 
-        <x-menu-item route="#" icon="🌱" label="Cultivos" />
+        <x-menu-item route="crops.index" icon="🌱" label="Cultivos" />
 
         <x-menu-item route="#" icon="📂" label="Categorías" />
 
