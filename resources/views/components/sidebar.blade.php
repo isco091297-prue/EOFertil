@@ -30,7 +30,7 @@
 
         <x-menu-item route="problems.index" icon="⚠️" label="Problemas" />
 
-        <x-menu-item route="#" icon="🧪" label="Protocolos" />
+        <x-menu-item route="protocols.index" icon="🧪" label="Protocolos" />
 
         <div class="pt-6 pb-2 text-xs uppercase tracking-widest text-green-300 font-bold">
             Comercial

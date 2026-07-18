@@ -3,7 +3,6 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\ZoneController;
 use App\Http\Controllers\BranchController;
@@ -12,9 +11,8 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProblemController;
-
-
-
+use App\Http\Controllers\ProtocolController;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
 
@@ -31,7 +29,6 @@ Route::middleware(['auth', 'admin', 'nocache'])->group(function () {
         ->name('dashboard');
 
     Route::resource('users', UserController::class);
-
     Route::resource('warehouses', WarehouseController::class);
     Route::resource('zones', ZoneController::class);
     Route::resource('branches', BranchController::class);
@@ -40,6 +37,24 @@ Route::middleware(['auth', 'admin', 'nocache'])->group(function () {
     Route::resource('brands', BrandController::class);
     Route::resource('products', ProductController::class);
     Route::resource('problems', ProblemController::class);
+
+    Route::get(
+        'protocols/crops/search',
+        [ProtocolController::class, 'searchCrops']
+    )->name('protocols.crops.search');
+
+    Route::get(
+        'protocols/problems/search',
+        [ProtocolController::class, 'searchProblems']
+    )->name('protocols.problems.search');
+
+    Route::get(
+        'protocols/products/search',
+        [ProtocolController::class, 'searchProducts']
+    )->name('protocols.products.search');
+
+    Route::resource('protocols', ProtocolController::class);
+
     Route::post('/logout', [LoginController::class, 'logout'])
         ->name('logout');
 });

@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use Illuminate\Database\Eloquent\Relations\HasMany;
 class Product extends Model
 {
     protected $fillable = [
@@ -34,5 +34,8 @@ class Product extends Model
     {
         return $this->belongsTo(Category::class);
     }
-
+public function protocolApplicationProducts(): HasMany
+{
+    return $this->hasMany(ProtocolApplicationProduct::class);
+}
 }
