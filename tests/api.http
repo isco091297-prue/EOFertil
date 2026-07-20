@@ -1,0 +1,17 @@
+@baseUrl = http://127.0.0.1:8000/api/v1
+
+
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+    "username": "JuanCarlos",
+    "password": "Trinchera2025"
+}
+### Profile
+
+### Logout
+
+
+GET {{baseUrl}}/profile
+Authorization: Bearer 2|W6ZMR4xKRGgfpKbrqYIqM5MWmYHjIyYGws8sQIMUcbdeaa1e
