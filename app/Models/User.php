@@ -43,6 +43,7 @@ use HasApiTokens, HasFactory, Notifiable;
         'is_active',
 
         'last_login',
+        'welcome_completed_at',
 
     ];
 
@@ -61,6 +62,7 @@ use HasApiTokens, HasFactory, Notifiable;
             'password' => 'hashed',
 
             'last_login' => 'datetime',
+            'welcome_completed_at' => 'datetime',
 
             'is_active' => 'boolean',
 

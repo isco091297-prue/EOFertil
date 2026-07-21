@@ -21,7 +21,7 @@ Route::prefix('v1')->group(function () {
       //  Route::apiResource('protocols', ProtocolController::class);
 
         //Route::apiResource('products', ProductController::class);
-
+        Route::post('/welcome/complete', [AuthController::class, 'completeWelcome']);
     });
 
 });

@@ -14,8 +14,7 @@ class AuthController extends Controller
 {
     public function __construct(
         private readonly AuthService $authService
-    ) {
-    }
+    ) {}
 
     public function login(LoginRequest $request)
     {
@@ -29,10 +28,10 @@ class AuthController extends Controller
                 [
                     'token' => $result['token'],
                     'user' => new UserResource($result['user']),
+                    'showWelcome' => $result['showWelcome'],
                 ],
                 'Inicio de sesión correcto.'
             );
-
         } catch (AuthenticationException $e) {
 
             return ApiResponse::error(
@@ -40,7 +39,6 @@ class AuthController extends Controller
                 null,
                 401
             );
-
         }
     }
 
@@ -55,4 +53,18 @@ class AuthController extends Controller
             'Sesión cerrada correctamente.'
         );
     }
+    public function completeWelcome(Request $request)
+{
+    $user = $request->user();
+
+    if ($user->welcome_completed_at === null) {
+        $user->welcome_completed_at = now();
+        $user->save();
+    }
+
+    return ApiResponse::success(
+        null,
+        'Bienvenida completada correctamente.'
+    );
+}
 }

@@ -35,6 +35,7 @@ class UserResource extends JsonResource
                 'name' => $this->role?->name,
 
             ],
+            'welcome_completed_at' => $this->welcome_completed_at,
 
         ];
     }
