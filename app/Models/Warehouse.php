@@ -21,11 +21,17 @@ class Warehouse extends Model
     ];
 
     public function zones()
-{
-    return $this->hasMany(Zone::class);
-}
-public function branches()
-{
-    return $this->hasMany(Branch::class);
-}
+    {
+        return $this->hasMany(Zone::class);
+    }
+
+    public function branches()
+    {
+        return $this->hasMany(Branch::class);
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
 }

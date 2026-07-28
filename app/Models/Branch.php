@@ -10,29 +10,18 @@ class Branch extends Model
     use HasFactory;
 
     protected $fillable = [
-
         'warehouse_id',
-
         'zone_id',
-
         'code',
-
         'name',
-
         'address',
-
         'phone',
-
         'description',
-
-        'is_active'
-
+        'is_active',
     ];
 
     protected $casts = [
-
-        'is_active' => 'boolean'
-
+        'is_active' => 'boolean',
     ];
 
     public function warehouse()
@@ -43,5 +32,10 @@ class Branch extends Model
     public function zone()
     {
         return $this->belongsTo(Zone::class);
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
     }
 }

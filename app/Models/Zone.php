@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Zone extends Model
 {
@@ -25,8 +25,9 @@ class Zone extends Model
     {
         return $this->belongsTo(Warehouse::class);
     }
+
     public function branches()
-{
-    return $this->hasMany(Branch::class);
-}
+    {
+        return $this->hasMany(Branch::class);
+    }
 }
