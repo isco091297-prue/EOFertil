@@ -28,17 +28,27 @@ export function renumberApplications() {
                 applicationIndex + 1;
 
         }
+    const applicationType = application.querySelector(
+    ".application-type"
+);
 
-        const description = application.querySelector(
-            ".application-description"
-        );
+if (applicationType) {
 
-        if (description) {
+    applicationType.name =
+        `applications[${applicationIndex}][application_type]`;
 
-            description.name =
-                `applications[${applicationIndex}][description]`;
+}
 
-        }
+const description = application.querySelector(
+    ".application-description"
+);
+
+if (description) {
+
+    description.name =
+        `applications[${applicationIndex}][description]`;
+
+}
 
         renumberProducts(
             application,

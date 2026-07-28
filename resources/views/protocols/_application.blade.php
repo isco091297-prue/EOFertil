@@ -2,9 +2,7 @@
 
     <div class="application-card rounded-xl bg-white shadow">
 
-        <div
-            class="flex items-center justify-between border-b border-gray-200 px-6 py-4"
-        >
+        <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
 
             <div>
 
@@ -23,15 +21,10 @@
 
             <div class="flex items-center gap-3">
 
-                <input
-                    type="hidden"
-                    class="application-number-input"
-                >
+                <input type="hidden" class="application-number-input">
 
-                <button
-                    type="button"
-                    class="btn-remove-application rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
-                >
+                <button type="button"
+                    class="btn-remove-application rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700">
                     Eliminar
                 </button>
 
@@ -40,20 +33,27 @@
         </div>
 
         <div class="space-y-6 p-6">
+            <div>
+
+                <label class="mb-2 block text-sm font-medium text-gray-700">
+                    Tipo de aplicación
+                </label>
+
+                <input type="text"
+                    class="application-type w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                    placeholder="Ej: Foliar, Botón, Drench...">
+
+            </div>
 
             <div>
 
-                <label
-                    class="mb-2 block text-sm font-medium text-gray-700"
-                >
+                <label class="mb-2 block text-sm font-medium text-gray-700">
                     Descripción
                 </label>
 
-                <textarea
-                    rows="3"
+                <textarea rows="3"
                     class="application-description w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                    placeholder="Descripción de la aplicación..."
-                ></textarea>
+                    placeholder="Descripción de la aplicación..."></textarea>
 
             </div>
 
@@ -93,9 +93,7 @@
 
                     </thead>
 
-                    <tbody
-                        class="products-container divide-y divide-gray-200"
-                    >
+                    <tbody class="products-container divide-y divide-gray-200">
 
                     </tbody>
 
@@ -105,10 +103,8 @@
 
             <div>
 
-                <button
-                    type="button"
-                    class="btn-add-product rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
-                >
+                <button type="button"
+                    class="btn-add-product rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700">
                     + Agregar Producto
                 </button>
 

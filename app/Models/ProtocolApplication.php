@@ -12,6 +12,7 @@ class ProtocolApplication extends Model
         'protocol_id',
         'application_number',
         'description',
+        'application_type',
     ];
 
     public function protocol(): BelongsTo

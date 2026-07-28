@@ -88,6 +88,7 @@ class ProtocolService
 
             $application = $protocol->applications()->create([
                 'application_number' => $applicationData['application_number'],
+                'application_type' => $applicationData['application_type'] ?? null,
                 'description' => $applicationData['description'] ?? null,
             ]);
 

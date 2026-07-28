@@ -30,23 +30,31 @@ export async function addApplication(applicationData = null) {
             "#applications-container .application-card:last-child"
         );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Descripción
-    |--------------------------------------------------------------------------
-    */
+   /*
+|--------------------------------------------------------------------------
+| Tipo de aplicación y descripción
+|--------------------------------------------------------------------------
+*/
 
-    if (applicationData) {
+if (applicationData) {
 
-        const description =
-            applicationCard.querySelector(
-                ".application-description"
-            );
+    const type =
+        applicationCard.querySelector(
+            ".application-type"
+        );
 
-        description.value =
-            applicationData.description ?? "";
+    type.value =
+        applicationData.application_type ?? "";
 
-    }
+    const description =
+        applicationCard.querySelector(
+            ".application-description"
+        );
+
+    description.value =
+        applicationData.description ?? "";
+
+}
 
     /*
     |--------------------------------------------------------------------------

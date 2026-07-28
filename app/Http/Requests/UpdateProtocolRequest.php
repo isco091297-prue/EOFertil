@@ -71,6 +71,11 @@ class UpdateProtocolRequest extends FormRequest
                 'nullable',
                 'string',
             ],
+            'applications.*.application_type' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
 
         ];
     }

@@ -103,6 +103,22 @@
 
                 <div class="p-6">
 
+                    @if ($application->application_type)
+                        <div class="mb-6">
+
+                            <h3 class="mb-2 font-semibold text-gray-700">
+                                Tipo de aplicación
+                            </h3>
+
+                            <p class="text-gray-600">
+
+                                {{ $application->application_type }}
+
+                            </p>
+
+                        </div>
+                    @endif
+
                     @if ($application->description)
                         <div class="mb-6">
 
