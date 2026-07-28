@@ -24,16 +24,15 @@ class UserController extends Controller
             'zone',
             'branch'
         ])
-        ->when($search, function ($query) use ($search) {
+            ->when($search, function ($query) use ($search) {
 
-            $query->where('first_name', 'like', "%{$search}%")
-                ->orWhere('last_name', 'like', "%{$search}%")
-                ->orWhere('username', 'like', "%{$search}%")
-                ->orWhere('identification', 'like', "%{$search}%");
-
-        })
-        ->orderBy('first_name')
-        ->paginate(10);
+                $query->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%")
+                    ->orWhere('identification', 'like', "%{$search}%");
+            })
+            ->orderBy('first_name')
+            ->paginate(10);
 
         return view('users.index', compact('users'));
     }
@@ -131,14 +130,30 @@ class UserController extends Controller
             ->route('users.index')
             ->with('success', 'Usuario actualizado correctamente.');
     }
+    public function approve(User $user)
+    {
+        if ($user->is_active) {
 
+            return redirect()
+                ->route('users.index')
+                ->with('success', 'El usuario ya se encuentra activo.');
+        }
+
+        $user->update([
+            'is_active' => true,
+        ]);
+
+        return redirect()
+            ->route('users.index')
+            ->with('success', 'Usuario aprobado correctamente.');
+    }
     public function destroy(User $user)
     {
         if ($user->id === Auth::id()) {
 
             return redirect()
                 ->route('users.index')
-                ->with('success', 'No puede eliminar el usuario con el que ha iniciado sesión.');
+                ->with('error', 'No puede eliminar el usuario con el que ha iniciado sesión.');
         }
 
         $user->delete();

@@ -29,6 +29,10 @@ Route::middleware(['auth', 'admin', 'nocache'])->group(function () {
         ->name('dashboard');
 
     Route::resource('users', UserController::class);
+    Route::patch(
+        'users/{user}/approve',
+        [UserController::class, 'approve']
+    )->name('users.approve');
     Route::resource('warehouses', WarehouseController::class);
     Route::resource('zones', ZoneController::class);
     Route::resource('branches', BranchController::class);
