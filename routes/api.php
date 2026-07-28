@@ -10,7 +10,7 @@ Route::prefix('v1')->group(function () {
 
     // Autenticación
     Route::post('/login', [AuthController::class, 'login']);
-
+    Route::post('/register', [AuthController::class, 'register']);
     // Rutas protegidas
     Route::middleware('auth:sanctum')->group(function () {
 
@@ -18,10 +18,9 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/profile', [ProfileController::class, 'show']);
 
-      //  Route::apiResource('protocols', ProtocolController::class);
+        //  Route::apiResource('protocols', ProtocolController::class);
 
         //Route::apiResource('products', ProductController::class);
         Route::post('/welcome/complete', [AuthController::class, 'completeWelcome']);
     });
-
 });

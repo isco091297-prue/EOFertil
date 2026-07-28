@@ -3,51 +3,103 @@
 namespace App\Services\Api\V1;
 
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Hash;
 
 class AuthService
 {
-   public function login(array $credentials): array
-{
-    $user = User::query()
-        ->where('username', $credentials['username'])
-        ->orWhere('email', $credentials['username'])
-        ->first();
+    public function login(array $credentials): array
+    {
+        $user = User::query()
+            ->where('username', $credentials['username'])
+            ->orWhere('email', $credentials['username'])
+            ->first();
 
-    if (! $user) {
-        throw new AuthenticationException(
-            'Usuario o contraseña incorrectos.'
-        );
+        if (! $user) {
+            throw new AuthenticationException(
+                'Usuario o contraseña incorrectos.'
+            );
+        }
+
+        if (! Hash::check($credentials['password'], $user->password)) {
+            throw new AuthenticationException(
+                'Usuario o contraseña incorrectos.'
+            );
+        }
+
+        if (! $user->is_active) {
+            throw new AuthenticationException(
+                'Tu cuenta está pendiente de aprobación por un administrador.'
+            );
+        }
+
+        $user->update([
+            'last_login' => now(),
+        ]);
+
+        $token = $user->createToken('flutter-app')->plainTextToken;
+
+        return [
+            'user' => $user,
+            'token' => $token,
+            'showWelcome' => is_null($user->welcome_completed_at),
+        ];
     }
 
-    if (! Hash::check($credentials['password'], $user->password)) {
-        throw new AuthenticationException(
-            'Usuario o contraseña incorrectos.'
-        );
+    public function logout(User $user): void
+    {
+        $user->currentAccessToken()?->delete();
     }
+    public function register(array $data): User
+    {
+        $role = Role::query()
+            ->where('name', 'Perchero')
+            ->where('is_active', true)
+            ->first();
 
-    if (! $user->is_active) {
-        throw new AuthenticationException(
-            'El usuario se encuentra inactivo.'
-        );
+        if (! $role) {
+            throw new \Exception(
+                'No existe un rol activo llamado Perchero.'
+            );
+        }
+
+        return User::create([
+            'role_id' => $role->id,
+
+            'warehouse_id' => $data['warehouse_id'],
+
+            'zone_id' => $data['zone_id'],
+
+            'branch_id' => $data['branch_id'],
+
+            'first_name' => $data['first_name'],
+
+            'last_name' => $data['last_name'],
+
+            'identification' => $data['identification'],
+
+            'phone' => $data['phone'],
+
+            // La cédula será el usuario
+            'username' => $data['identification'],
+
+            'email' => $data['email'] ?? null,
+
+            'password' => $data['password'],
+
+            'bank' => $data['bank'],
+
+            'account_type' => $data['account_type'],
+
+            'account_number' => $data['account_number'],
+
+            // El administrador deberá aprobarlo
+            'is_active' => false,
+
+            'privacy_accepted' => true,
+
+            'privacy_accepted_at' => now(),
+        ]);
     }
-
-    $user->update([
-        'last_login' => now(),
-    ]);
-
-    $token = $user->createToken('flutter-app')->plainTextToken;
-
-    return [
-        'user' => $user,
-        'token' => $token,
-        'showWelcome' => is_null($user->welcome_completed_at),
-    ];
-}
-
-   public function logout(User $user): void
-{
-    $user->currentAccessToken()?->delete();
-}
 }

@@ -9,6 +9,8 @@ use App\Services\Api\V1\AuthService;
 use App\Support\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Auth\AuthenticationException;
+use App\Http\Requests\Api\V1\RegisterRequest;
+use Exception;
 
 class AuthController extends Controller
 {
@@ -41,7 +43,27 @@ class AuthController extends Controller
             );
         }
     }
+    public function register(RegisterRequest $request)
+    {
+        try {
 
+            $this->authService->register(
+                $request->validated()
+            );
+
+            return ApiResponse::success(
+                null,
+                'Tu solicitud fue registrada correctamente. Un administrador revisará tu información antes de habilitar tu acceso.'
+            );
+        } catch (Exception $e) {
+
+            return ApiResponse::error(
+                $e->getMessage(),
+                null,
+                500
+            );
+        }
+    }
     public function logout(Request $request)
     {
         $this->authService->logout(
@@ -54,17 +76,17 @@ class AuthController extends Controller
         );
     }
     public function completeWelcome(Request $request)
-{
-    $user = $request->user();
+    {
+        $user = $request->user();
 
-    if ($user->welcome_completed_at === null) {
-        $user->welcome_completed_at = now();
-        $user->save();
+        if ($user->welcome_completed_at === null) {
+            $user->welcome_completed_at = now();
+            $user->save();
+        }
+
+        return ApiResponse::success(
+            null,
+            'Bienvenida completada correctamente.'
+        );
     }
-
-    return ApiResponse::success(
-        null,
-        'Bienvenida completada correctamente.'
-    );
-}
 }

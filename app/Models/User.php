@@ -9,7 +9,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
     protected $fillable = [
 
         'role_id',
@@ -41,9 +41,11 @@ use HasApiTokens, HasFactory, Notifiable;
         'account_number',
 
         'is_active',
-
+        'privacy_accepted',
+        'privacy_accepted_at',
         'last_login',
         'welcome_completed_at',
+
 
     ];
 
@@ -63,7 +65,9 @@ use HasApiTokens, HasFactory, Notifiable;
 
             'last_login' => 'datetime',
             'welcome_completed_at' => 'datetime',
+            'privacy_accepted' => 'boolean',
 
+            'privacy_accepted_at' => 'datetime',
             'is_active' => 'boolean',
 
         ];
