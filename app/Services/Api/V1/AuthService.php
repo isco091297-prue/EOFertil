@@ -43,7 +43,6 @@ class AuthService
         return [
             'user' => $user,
             'token' => $token,
-            'showWelcome' => is_null($user->welcome_completed_at),
         ];
     }
 

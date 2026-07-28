@@ -34,7 +34,6 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/profile', [ProfileController::class, 'show']);
 
-        Route::post('/welcome/complete', [AuthController::class, 'completeWelcome']);
 
         // Route::apiResource('protocols', ProtocolController::class);
         // Route::apiResource('products', ProductController::class);

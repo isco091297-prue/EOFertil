@@ -44,7 +44,6 @@ class User extends Authenticatable
         'privacy_accepted',
         'privacy_accepted_at',
         'last_login',
-        'welcome_completed_at',
 
 
     ];
@@ -64,7 +63,6 @@ class User extends Authenticatable
             'password' => 'hashed',
 
             'last_login' => 'datetime',
-            'welcome_completed_at' => 'datetime',
             'privacy_accepted' => 'boolean',
 
             'privacy_accepted_at' => 'datetime',

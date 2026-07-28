@@ -30,7 +30,6 @@ class AuthController extends Controller
                 [
                     'token' => $result['token'],
                     'user' => new UserResource($result['user']),
-                    'showWelcome' => $result['showWelcome'],
                 ],
                 'Inicio de sesión correcto.'
             );
@@ -75,18 +74,5 @@ class AuthController extends Controller
             'Sesión cerrada correctamente.'
         );
     }
-    public function completeWelcome(Request $request)
-    {
-        $user = $request->user();
 
-        if ($user->welcome_completed_at === null) {
-            $user->welcome_completed_at = now();
-            $user->save();
-        }
-
-        return ApiResponse::success(
-            null,
-            'Bienvenida completada correctamente.'
-        );
-    }
 }
