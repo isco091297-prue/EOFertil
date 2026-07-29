@@ -2,8 +2,8 @@
 
 namespace App\Services\Api\V1;
 
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Hash;
 
@@ -12,6 +12,12 @@ class AuthService
     public function login(array $credentials): array
     {
         $user = User::query()
+            ->with([
+                'role',
+                'warehouse',
+                'zone',
+                'branch',
+            ])
             ->where('username', $credentials['username'])
             ->orWhere('email', $credentials['username'])
             ->first();
@@ -34,11 +40,20 @@ class AuthService
             );
         }
 
+        // Actualizar último acceso
         $user->update([
             'last_login' => now(),
         ]);
 
-        $token = $user->createToken('flutter-app')->plainTextToken;
+        // Refrescar modelo
+        $user->refresh();
+
+        // Un solo token activo por usuario
+        $user->tokens()->delete();
+
+        $token = $user
+            ->createToken('flutter-app')
+            ->plainTextToken;
 
         return [
             'user' => $user,
@@ -50,6 +65,7 @@ class AuthService
     {
         $user->currentAccessToken()?->delete();
     }
+
     public function register(array $data): User
     {
         $role = Role::query()

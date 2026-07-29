@@ -20,22 +20,36 @@ class UserResource extends JsonResource
 
             'last_name' => $this->last_name,
 
+            'full_name' => trim($this->first_name . ' ' . $this->last_name),
+
+            'identification' => $this->identification,
+
             'username' => $this->username,
 
             'email' => $this->email,
+
+            'phone' => $this->phone,
+
+            'bank' => $this->bank,
+
+            'account_type' => $this->account_type,
+
+            'account_number' => $this->account_number,
 
             'is_active' => $this->is_active,
 
             'last_login' => $this->last_login,
 
-            'role' => [
+            // Preparado para cuando agreguemos fotos
+            'photo' => null,
 
-                'id' => $this->role?->id,
+            'role' => new RoleResource($this->whenLoaded('role')),
 
-                'name' => $this->role?->name,
+            'warehouse' => new WarehouseResource($this->whenLoaded('warehouse')),
 
-            ],
+            'zone' => new ZoneResource($this->whenLoaded('zone')),
 
+            'branch' => new BranchResource($this->whenLoaded('branch')),
         ];
     }
 }
