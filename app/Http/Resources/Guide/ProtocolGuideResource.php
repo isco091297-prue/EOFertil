@@ -58,6 +58,10 @@ class ProtocolGuideResource extends JsonResource
 
                                     'categoria' => $item->product?->category?->name,
 
+                                    'image_path' => $item->product?->image_path,
+
+                                    'image_url' => $item->product?->image_url,
+
                                 ],
 
                             ];
