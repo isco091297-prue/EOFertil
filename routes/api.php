@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ProtocolController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\CatalogController;
+use App\Http\Controllers\Api\V1\GuideController;
 
 Route::prefix('v1')->group(function () {
 
@@ -34,6 +35,17 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/profile', [ProfileController::class, 'show']);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Guía Técnica
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/guide/crops', [GuideController::class, 'crops']);
+
+        Route::get('/guide/problems', [GuideController::class, 'problems']);
+
+        Route::get('/guide/protocol', [GuideController::class, 'protocol']);
 
         // Route::apiResource('protocols', ProtocolController::class);
         // Route::apiResource('products', ProductController::class);

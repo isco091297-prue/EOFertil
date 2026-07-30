@@ -1,35 +1,26 @@
 @baseUrl = http://127.0.0.1:8000/api/v1
 
-
+### LOGIN
+# @name login
 POST {{baseUrl}}/login
 Content-Type: application/json
 
 {
-    "username": "JuanCarlos",
-    "password": "Trinchera2025"
+  "username": "1726301821",
+  "password": "Darwin1388"
 }
 
-GET {{baseUrl}}/profile
-Authorization: Bearer 2|W6ZMR4xKRGgfpKbrqYIqM5MWmYHjIyYGws8sQIMUcbdeaa1e
-
-### Registro de perchero
-POST http://127.0.0.1:8000/api/v1/register
+### CULTIVOS
+GET {{baseUrl}}/guide/crops
 Accept: application/json
-Content-Type: application/json
+Authorization: Bearer {{login.response.body.data.token}}
 
-{
-    "first_name": "Carlos",
-    "last_name": "Perchero",
-    "identification": "1711111111",
-    "phone": "0991111111",
-    "email": "carlos@test.com",
-    "zone_id": 2,
-    "branch_id": 2,
-    "warehouse_id": 2,
-    "bank": "Pichincha",
-    "account_type": "ahorros",
-    "account_number": "123456789",
-    "password": "Password123",
-    "password_confirmation": "Password123",
-    "privacy_accepted": true
-}
+### PROBLEMAS
+GET {{baseUrl}}/guide/problems?crop_id=1
+Accept: application/json
+Authorization: Bearer {{login.response.body.data.token}}
+
+### PROTOCOLO
+GET {{baseUrl}}/guide/protocol?crop_id=1&problem_id=1
+Accept: application/json
+Authorization: Bearer {{login.response.body.data.token}}
