@@ -139,7 +139,7 @@ class CashbackController extends Controller
 
             $data['user_id'] = $request->user()->id;
             $data['branch_id'] = $request->user()->branch_id;
-            $data['origen'] = 'app';
+            $data['origen'] = 'manual';
 
             $invoice = $this->invoiceService->store($data);
 
