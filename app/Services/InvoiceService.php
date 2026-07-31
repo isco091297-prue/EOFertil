@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Invoice;
 use Illuminate\Support\Facades\DB;
 use App\Models\Branch;
+use App\Models\CashbackTransaction;
 use App\Models\CashbackCampaign;
 use App\Models\Product;
 use App\Models\User;
@@ -75,19 +76,66 @@ class InvoiceService
             $this->cashbackService->generate($invoice);
 
             /*
-            |--------------------------------------------------------------------------
-            | Retornar factura actualizada
-            |--------------------------------------------------------------------------
-            */
+|--------------------------------------------------------------------------
+| Obtener factura actualizada
+|--------------------------------------------------------------------------
+*/
 
-            return $invoice->fresh([
+            $updatedInvoice = $invoice->fresh([
                 'cashbackCampaign:id,nombre',
                 'branch:id,name',
                 'items.product:id,name',
             ]);
+
+            /*
+|--------------------------------------------------------------------------
+| Detectar si esta factura recibió el bono de primera factura
+|--------------------------------------------------------------------------
+|
+| No dependemos de columnas adicionales en invoices.
+| La transacción de bonificación es la fuente real del logro.
+|
+*/
+
+            $firstInvoiceBonus = CashbackTransaction::where(
+                'user_id',
+                $invoice->user_id
+            )
+                ->where(
+                    'invoice_id',
+                    $invoice->id
+                )
+                ->where(
+                    'tipo',
+                    'bonificacion'
+                )
+                ->where(
+                    'descripcion',
+                    'Bono por registrar tu primera factura'
+                )
+                ->first();
+
+            /*
+|--------------------------------------------------------------------------
+| Información temporal para Flutter
+|--------------------------------------------------------------------------
+*/
+
+            $updatedInvoice->setAttribute(
+                'logro_primera_factura',
+                $firstInvoiceBonus !== null
+            );
+
+            $updatedInvoice->setAttribute(
+                'bono_primera_factura',
+                $firstInvoiceBonus
+                    ? (float) $firstInvoiceBonus->valor
+                    : 0
+            );
+
+            return $updatedInvoice;
         });
     }
-
     /**
      * Validar datos.
      *
