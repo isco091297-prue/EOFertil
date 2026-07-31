@@ -307,8 +307,13 @@ class InvoiceService
 
             'numero_factura_original' => $data['numero_factura_original'],
 
-            'fecha_factura' => $data['fecha_factura'],
+            'numero_factura_normalizado' => preg_replace(
+                '/\D/',
+                '',
+                $data['numero_factura_original']
+            ),
 
+            'fecha_factura' => $data['fecha_factura'],
             'total_factura' => 0,
             'total_productos_participantes' => 0,
 
