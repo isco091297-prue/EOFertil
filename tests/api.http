@@ -1,26 +1,71 @@
 @baseUrl = http://127.0.0.1:8000/api/v1
-
+@token = 17|3CCWACV0uLQJnlTUQuOb4NyxSAk1gje5gSDHJU1Ff8740871
+###############################################################
 ### LOGIN
-# @name login
+###############################################################
+
 POST {{baseUrl}}/login
 Content-Type: application/json
+Accept: application/json
 
 {
-  "username": "1726301821",
-  "password": "Darwin1388"
+    "username": "1726301821",
+    "password": "Darwin1388"
 }
 
-### CULTIVOS
-GET {{baseUrl}}/guide/crops
-Accept: application/json
-Authorization: Bearer {{login.response.body.data.token}}
+###############################################################
+### CAMPAÑA ACTUAL
+###############################################################
 
-### PROBLEMAS
-GET {{baseUrl}}/guide/problems?crop_id=1
+GET {{baseUrl}}/cashback/current-campaign
+Authorization: Bearer {{token}}
 Accept: application/json
-Authorization: Bearer {{login.response.body.data.token}}
 
-### PROTOCOLO
-GET {{baseUrl}}/guide/protocol?crop_id=1&problem_id=1
+###############################################################
+### SALDO DEL USUARIO
+###############################################################
+
+GET {{baseUrl}}/cashback/balance
+Authorization: Bearer {{token}}
 Accept: application/json
-Authorization: Bearer {{login.response.body.data.token}}
+
+###############################################################
+### HISTORIAL
+###############################################################
+
+GET {{baseUrl}}/cashback/history
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###############################################################
+### DETALLE FACTURA
+###############################################################
+
+GET {{baseUrl}}/cashback/invoices/1
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###############################################################
+### REGISTRAR FACTURA
+###############################################################
+
+POST {{baseUrl}}/cashback/invoices
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "cashback_campaign_id": 1,
+    "numero_factura_original": "123456",
+    "fecha_factura": "2026-07-30",
+    "items": [
+        {
+            "product_id": 1,
+            "valor": 25.50
+        },
+        {
+            "product_id": 2,
+            "valor": 10.75
+        }
+    ]
+}

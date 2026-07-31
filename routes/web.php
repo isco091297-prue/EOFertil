@@ -13,6 +13,8 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProblemController;
 use App\Http\Controllers\ProtocolController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CashbackCampaignController;
+use App\Http\Controllers\RankingRewardController;
 
 Route::middleware('guest')->group(function () {
 
@@ -24,7 +26,8 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware(['auth', 'admin', 'nocache'])->group(function () {
-
+    Route::resource('cashback-campaigns', CashbackCampaignController::class);
+    Route::resource('ranking-rewards', RankingRewardController::class);
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 

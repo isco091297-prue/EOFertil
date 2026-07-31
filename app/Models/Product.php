@@ -49,4 +49,8 @@ class Product extends Model
     {
         return $this->hasMany(ProtocolApplicationProduct::class);
     }
+    public function invoiceItems(): HasMany
+    {
+        return $this->hasMany(InvoiceItem::class);
+    }
 }

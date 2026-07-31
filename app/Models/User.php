@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -44,7 +45,9 @@ class User extends Authenticatable
         'privacy_accepted',
         'privacy_accepted_at',
         'last_login',
-
+        'cashback_total',
+        'cashback_claimed',
+        'cashback_available',
 
     ];
 
@@ -63,10 +66,18 @@ class User extends Authenticatable
             'password' => 'hashed',
 
             'last_login' => 'datetime',
+
             'privacy_accepted' => 'boolean',
 
             'privacy_accepted_at' => 'datetime',
+
             'is_active' => 'boolean',
+
+            'cashback_total' => 'decimal:2',
+
+            'cashback_claimed' => 'decimal:2',
+
+            'cashback_available' => 'decimal:2',
 
         ];
     }
@@ -89,5 +100,13 @@ class User extends Authenticatable
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+    public function cashbackTransactions(): HasMany
+    {
+        return $this->hasMany(CashbackTransaction::class);
     }
 }
