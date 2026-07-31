@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\CashbackTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,6 +15,27 @@ class InvoiceResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Bono por primera factura
+        |--------------------------------------------------------------------------
+        |
+        | Buscamos si esta factura generó la bonificación especial
+        | correspondiente al logro de primera factura.
+        |
+        */
+
+        $firstInvoiceBonus = CashbackTransaction::where(
+            'invoice_id',
+            $this->id
+        )
+            ->where('tipo', 'bonificacion')
+            ->where(
+                'descripcion',
+                'Bono por registrar tu primera factura'
+            )
+            ->first();
+
         return [
             'id' => $this->id,
 
@@ -31,6 +53,18 @@ class InvoiceResource extends JsonResource
             'porcentaje_cashback' => (float) $this->porcentaje_cashback,
 
             'cashback_generado' => (float) $this->cashback_generado,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Logro primera factura
+            |--------------------------------------------------------------------------
+            */
+
+            'logro_primera_factura' => $firstInvoiceBonus !== null,
+
+            'bono_primera_factura' => $firstInvoiceBonus
+                ? (float) $firstInvoiceBonus->valor
+                : 0.00,
 
             'foto_factura' => $this->foto_factura,
 
