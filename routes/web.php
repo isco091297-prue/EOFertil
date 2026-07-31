@@ -15,6 +15,7 @@ use App\Http\Controllers\ProtocolController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CashbackCampaignController;
 use App\Http\Controllers\RankingRewardController;
+use App\Http\Controllers\ActiveIngredientController;
 
 Route::middleware('guest')->group(function () {
 
@@ -43,6 +44,8 @@ Route::middleware(['auth', 'admin', 'nocache'])->group(function () {
     Route::resource('categories', CategoryController::class);
     Route::resource('brands', BrandController::class);
     Route::resource('products', ProductController::class);
+    Route::resource('active-ingredients', ActiveIngredientController::class);
+
     Route::resource('problems', ProblemController::class);
 
     Route::get(

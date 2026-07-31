@@ -32,6 +32,8 @@
 
         <x-menu-item route="products.index" icon="🧴" label="Productos" />
 
+        <x-menu-item route="active-ingredients.index" icon="🧬" label="Ingredientes Activos" />
+
         <x-menu-item route="problems.index" icon="⚠️" label="Problemas" />
 
         <x-menu-item route="protocols.index" icon="🧪" label="Protocolos" />
