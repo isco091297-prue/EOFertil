@@ -1,13 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ProfileController;
-use App\Http\Controllers\Api\V1\ProtocolController;
-use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\GuideController;
 use App\Http\Controllers\Api\V1\CashbackController;
+use App\Http\Controllers\Api\V1\ProductController;
 
 Route::prefix('v1')->group(function () {
 
@@ -17,12 +17,36 @@ Route::prefix('v1')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register', [AuthController::class, 'register']);
+    Route::post(
+        '/login',
+        [AuthController::class, 'login']
+    );
 
-    Route::get('/zones', [CatalogController::class, 'zones']);
-    Route::get('/branches', [CatalogController::class, 'branches']);
-    Route::get('/warehouses', [CatalogController::class, 'warehouses']);
+    Route::post(
+        '/register',
+        [AuthController::class, 'register']
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Catálogos públicos
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/zones',
+        [CatalogController::class, 'zones']
+    );
+
+    Route::get(
+        '/branches',
+        [CatalogController::class, 'branches']
+    );
+
+    Route::get(
+        '/warehouses',
+        [CatalogController::class, 'warehouses']
+    );
 
     /*
     |--------------------------------------------------------------------------
@@ -38,7 +62,10 @@ Route::prefix('v1')->group(function () {
         |--------------------------------------------------------------------------
         */
 
-        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post(
+            '/logout',
+            [AuthController::class, 'logout']
+        );
 
         /*
         |--------------------------------------------------------------------------
@@ -46,7 +73,10 @@ Route::prefix('v1')->group(function () {
         |--------------------------------------------------------------------------
         */
 
-        Route::get('/profile', [ProfileController::class, 'show']);
+        Route::get(
+            '/profile',
+            [ProfileController::class, 'show']
+        );
 
         /*
         |--------------------------------------------------------------------------
@@ -54,11 +84,35 @@ Route::prefix('v1')->group(function () {
         |--------------------------------------------------------------------------
         */
 
-        Route::get('/guide/crops', [GuideController::class, 'crops']);
+        Route::get(
+            '/guide/crops',
+            [GuideController::class, 'crops']
+        );
 
-        Route::get('/guide/problems', [GuideController::class, 'problems']);
+        Route::get(
+            '/guide/problems',
+            [GuideController::class, 'problems']
+        );
 
-        Route::get('/guide/protocol', [GuideController::class, 'protocol']);
+        Route::get(
+            '/guide/protocol',
+            [GuideController::class, 'protocol']
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Productos
+        |--------------------------------------------------------------------------
+        |
+        | La aplicación móvil solamente necesita consultar los productos.
+        | La creación, edición y eliminación continúa en el panel web.
+        |
+        */
+
+        Route::get(
+            '/products',
+            [ProductController::class, 'index']
+        );
 
         /*
         |--------------------------------------------------------------------------
@@ -98,7 +152,5 @@ Route::prefix('v1')->group(function () {
         */
 
         // Route::apiResource('protocols', ProtocolController::class);
-        Route::apiResource('products', ProductController::class);
-
-   } );
+    });
 });
