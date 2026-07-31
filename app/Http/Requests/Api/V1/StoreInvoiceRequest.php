@@ -38,15 +38,39 @@ class StoreInvoiceRequest extends FormRequest
                 'date',
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Foto de la factura
+            |--------------------------------------------------------------------------
+            */
+
             'foto_factura' => [
-                'nullable',
-                'string',
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png',
+                'max:5120',
             ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | OCR
+            |--------------------------------------------------------------------------
+            |
+            | Todavía no estamos procesando OCR.
+            | Se mantiene preparado para implementarlo posteriormente.
+            |
+            */
 
             'ocr_result' => [
                 'nullable',
                 'array',
             ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Productos
+            |--------------------------------------------------------------------------
+            */
 
             'items' => [
                 'required',
@@ -77,29 +101,65 @@ class StoreInvoiceRequest extends FormRequest
     {
         return [
 
-            'cashback_campaign_id.required' => 'Debe seleccionar una campaña.',
+            'cashback_campaign_id.required' =>
+            'Debe seleccionar una campaña.',
 
-            'numero_factura_original.required' => 'Debe ingresar el número de factura.',
+            'numero_factura_original.required' =>
+            'Debe ingresar el número de factura.',
 
-            'numero_factura_original.digits' => 'Debe ingresar únicamente los últimos 6 dígitos de la factura.',
+            'numero_factura_original.digits' =>
+            'Debe ingresar únicamente los últimos 6 dígitos de la factura.',
 
-            'fecha_factura.required' => 'Debe ingresar la fecha de la factura.',
+            'fecha_factura.required' =>
+            'Debe ingresar la fecha de la factura.',
 
-            'fecha_factura.date' => 'La fecha de la factura es inválida.',
+            'fecha_factura.date' =>
+            'La fecha de la factura es inválida.',
 
-            'items.required' => 'Debe registrar al menos un producto.',
+            /*
+            |--------------------------------------------------------------------------
+            | Foto
+            |--------------------------------------------------------------------------
+            */
 
-            'items.array' => 'Los productos enviados son inválidos.',
+            'foto_factura.required' =>
+            'Debe tomar una foto de la factura.',
 
-            'items.min' => 'Debe registrar al menos un producto.',
+            'foto_factura.image' =>
+            'El archivo seleccionado debe ser una imagen.',
 
-            'items.*.product_id.required' => 'Todos los productos son obligatorios.',
+            'foto_factura.mimes' =>
+            'La foto de la factura debe ser JPG, JPEG o PNG.',
 
-            'items.*.valor.required' => 'Debe ingresar el valor del producto.',
+            'foto_factura.max' =>
+            'La foto de la factura no puede superar los 5 MB.',
 
-            'items.*.valor.numeric' => 'El valor del producto es inválido.',
+            /*
+            |--------------------------------------------------------------------------
+            | Productos
+            |--------------------------------------------------------------------------
+            */
 
-            'items.*.valor.gt' => 'El valor del producto debe ser mayor que cero.',
+            'items.required' =>
+            'Debe registrar al menos un producto.',
+
+            'items.array' =>
+            'Los productos enviados son inválidos.',
+
+            'items.min' =>
+            'Debe registrar al menos un producto.',
+
+            'items.*.product_id.required' =>
+            'Todos los productos son obligatorios.',
+
+            'items.*.valor.required' =>
+            'Debe ingresar el valor del producto.',
+
+            'items.*.valor.numeric' =>
+            'El valor del producto es inválido.',
+
+            'items.*.valor.gt' =>
+            'El valor del producto debe ser mayor que cero.',
 
         ];
     }
