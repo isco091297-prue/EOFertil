@@ -15,13 +15,34 @@ class ProtocolApplication extends Model
         'application_type',
     ];
 
+    /**
+     * Protocolo al que pertenece la aplicación.
+     */
     public function protocol(): BelongsTo
     {
         return $this->belongsTo(Protocol::class);
     }
 
+    /**
+     * Productos EOFertil agregados directamente
+     * a la aplicación.
+     */
     public function products(): HasMany
     {
-        return $this->hasMany(ProtocolApplicationProduct::class);
+        return $this->hasMany(
+            ProtocolApplicationProduct::class
+        );
+    }
+
+    /**
+     * Ingredientes activos agregados
+     * a la aplicación.
+     */
+    public function activeIngredients(): HasMany
+    {
+        return $this->hasMany(
+            ProtocolApplicationActiveIngredient::class,
+            'protocol_application_id'
+        );
     }
 }

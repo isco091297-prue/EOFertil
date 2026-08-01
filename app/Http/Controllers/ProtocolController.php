@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProtocolRequest;
 use App\Http\Requests\UpdateProtocolRequest;
 
+use App\Models\ActiveIngredient;
 use App\Models\Crop;
 use App\Models\Problem;
 use App\Models\Product;
@@ -35,7 +36,10 @@ class ProtocolController extends Controller
             ->latest()
             ->paginate(15);
 
-        return view('protocols.index', compact('protocols'));
+        return view(
+            'protocols.index',
+            compact('protocols')
+        );
     }
 
     /**
@@ -53,7 +57,7 @@ class ProtocolController extends Controller
         StoreProtocolRequest $request
     ): RedirectResponse {
 
-        $protocol = $this->protocolService->store(
+        $this->protocolService->store(
             $request->validated()
         );
 
@@ -75,8 +79,32 @@ class ProtocolController extends Controller
         $protocol->load([
             'crop',
             'problem',
+
+            /*
+            |--------------------------------------------------------------
+            | Productos EOFertil directos
+            |--------------------------------------------------------------
+            */
+
             'applications.products.product.brand',
             'applications.products.product.category',
+
+            /*
+            |--------------------------------------------------------------
+            | Ingredientes activos
+            |--------------------------------------------------------------
+            */
+
+            'applications.activeIngredients.activeIngredient',
+
+            /*
+            |--------------------------------------------------------------
+            | Productos recomendados de cada ingrediente
+            |--------------------------------------------------------------
+            */
+
+            'applications.activeIngredients.products.product.brand',
+            'applications.activeIngredients.products.product.category',
         ]);
 
         return view(
@@ -95,8 +123,32 @@ class ProtocolController extends Controller
         $protocol->load([
             'crop',
             'problem',
+
+            /*
+            |--------------------------------------------------------------
+            | Productos EOFertil directos
+            |--------------------------------------------------------------
+            */
+
             'applications.products.product.brand',
             'applications.products.product.category',
+
+            /*
+            |--------------------------------------------------------------
+            | Ingredientes activos
+            |--------------------------------------------------------------
+            */
+
+            'applications.activeIngredients.activeIngredient',
+
+            /*
+            |--------------------------------------------------------------
+            | Productos recomendados
+            |--------------------------------------------------------------
+            */
+
+            'applications.activeIngredients.products.product.brand',
+            'applications.activeIngredients.products.product.category',
         ]);
 
         return view(
@@ -119,10 +171,7 @@ class ProtocolController extends Controller
         );
 
         return redirect()
-            ->route(
-                'protocols.index',
-                $protocol
-            )
+            ->route('protocols.index')
             ->with(
                 'success',
                 'Protocolo actualizado correctamente.'
@@ -147,18 +196,31 @@ class ProtocolController extends Controller
                 'Protocolo eliminado correctamente.'
             );
     }
+
     /**
      * Buscar cultivos.
      */
-    public function searchCrops(Request $request): JsonResponse
-    {
-        $search = trim($request->get('search', ''));
+    public function searchCrops(
+        Request $request
+    ): JsonResponse {
+
+        $search = trim(
+            $request->get('search', '')
+        );
 
         $crops = Crop::query()
             ->where('is_active', true)
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where('name', 'like', "%{$search}%");
-            })
+            ->when(
+                $search !== '',
+                function ($query) use ($search) {
+
+                    $query->where(
+                        'name',
+                        'like',
+                        "%{$search}%"
+                    );
+                }
+            )
             ->orderBy('name')
             ->limit(20)
             ->get([
@@ -167,27 +229,42 @@ class ProtocolController extends Controller
             ]);
 
         return response()->json(
-            $crops->map(fn($crop) => [
-                'id' => $crop->id,
-                'text' => $crop->name,
-            ])
+            $crops->map(
+                fn($crop) => [
+                    'id' => $crop->id,
+                    'text' => $crop->name,
+                ]
+            )
         );
     }
 
     /**
      * Buscar problemas por cultivo.
      */
-    public function searchProblems(Request $request): JsonResponse
-    {
+    public function searchProblems(
+        Request $request
+    ): JsonResponse {
+
         $cropId = $request->get('crop_id');
-        $search = trim($request->get('search', ''));
+
+        $search = trim(
+            $request->get('search', '')
+        );
 
         $problems = Problem::query()
             ->where('crop_id', $cropId)
             ->where('is_active', true)
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where('name', 'like', "%{$search}%");
-            })
+            ->when(
+                $search !== '',
+                function ($query) use ($search) {
+
+                    $query->where(
+                        'name',
+                        'like',
+                        "%{$search}%"
+                    );
+                }
+            )
             ->orderBy('name')
             ->limit(20)
             ->get([
@@ -196,28 +273,52 @@ class ProtocolController extends Controller
             ]);
 
         return response()->json(
-            $problems->map(fn($problem) => [
-                'id' => $problem->id,
-                'text' => $problem->name,
-            ])
+            $problems->map(
+                fn($problem) => [
+                    'id' => $problem->id,
+                    'text' => $problem->name,
+                ]
+            )
         );
     }
 
     /**
-     * Buscar productos.
+     * Buscar productos EOFertil.
+     *
+     * Estos son los productos que pueden agregarse
+     * directamente a una aplicación.
      */
-    public function searchProducts(Request $request): JsonResponse
-    {
-        $search = trim($request->get('search', ''));
+    public function searchProducts(
+        Request $request
+    ): JsonResponse {
+
+        $search = trim(
+            $request->get('search', '')
+        );
 
         $products = Product::query()
             ->where('is_active', true)
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('code', 'like', "%{$search}%")
-                        ->orWhere('name', 'like', "%{$search}%");
-                });
-            })
+            ->when(
+                $search !== '',
+                function ($query) use ($search) {
+
+                    $query->where(
+                        function ($q) use ($search) {
+
+                            $q->where(
+                                'code',
+                                'like',
+                                "%{$search}%"
+                            )
+                                ->orWhere(
+                                    'name',
+                                    'like',
+                                    "%{$search}%"
+                                );
+                        }
+                    );
+                }
+            )
             ->orderBy('name')
             ->limit(20)
             ->get([
@@ -227,10 +328,109 @@ class ProtocolController extends Controller
             ]);
 
         return response()->json(
-            $products->map(fn($product) => [
-                'id' => $product->id,
-                'text' => "{$product->code} - {$product->name}",
+            $products->map(
+                fn($product) => [
+                    'id' => $product->id,
+                    'text' =>
+                    "{$product->code} - {$product->name}",
+                ]
+            )
+        );
+    }
+
+    /**
+     * Buscar ingredientes activos.
+     */
+    public function searchActiveIngredients(
+        Request $request
+    ): JsonResponse {
+
+        $search = trim(
+            $request->get('search', '')
+        );
+
+        $activeIngredients = ActiveIngredient::query()
+            ->where('is_active', true)
+            ->when(
+                $search !== '',
+                function ($query) use ($search) {
+
+                    $query->where(
+                        'name',
+                        'like',
+                        "%{$search}%"
+                    );
+                }
+            )
+            ->orderBy('name')
+            ->limit(20)
+            ->get([
+                'id',
+                'name',
+            ]);
+
+        return response()->json(
+            $activeIngredients->map(
+                fn($activeIngredient) => [
+                    'id' => $activeIngredient->id,
+                    'text' => $activeIngredient->name,
+                ]
+            )
+        );
+    }
+
+    /**
+     * Obtener los productos vinculados
+     * a un ingrediente activo.
+     */
+    public function activeIngredientProducts(
+        ActiveIngredient $activeIngredient
+    ): JsonResponse {
+
+        /*
+        |--------------------------------------------------------------
+        | Cargar únicamente productos activos
+        |--------------------------------------------------------------
+        |
+        | Esta relación ya existe en ActiveIngredient porque la
+        | construimos anteriormente mediante la tabla pivote
+        | active_ingredient_product.
+        |
+        */
+
+        $products = $activeIngredient
+            ->products()
+            ->where('products.is_active', true)
+            ->with([
+                'brand:id,name',
+                'category:id,name',
             ])
+            ->orderBy('products.name')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------
+        | Respuesta para el formulario
+        |--------------------------------------------------------------
+        */
+
+        return response()->json(
+            $products->map(
+                fn($product) => [
+                    'id' => $product->id,
+                    'code' => $product->code,
+                    'name' => $product->name,
+
+                    'brand' =>
+                    $product->brand?->name,
+
+                    'category' =>
+                    $product->category?->name,
+
+                    'text' =>
+                    "{$product->code} - {$product->name}",
+                ]
+            )
         );
     }
 }

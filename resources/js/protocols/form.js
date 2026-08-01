@@ -1,16 +1,30 @@
-import { loadCrops, loadProblems } from "./ajax";
+import {
+    loadCrops,
+    loadProblems
+} from "./ajax";
+
 import {
     addApplication,
     registerApplicationEvents
 } from "./application";
-import { registerProductEvents } from "./product";
+
+import {
+    registerProductEvents
+} from "./product";
+
+import {
+    registerActiveIngredientEvents
+} from "./activeIngredient";
 
 /**
  * Obtener datos del protocolo en edición.
  */
 function getProtocolData() {
 
-    const script = document.getElementById("protocol-data");
+    const script =
+        document.getElementById(
+            "protocol-data"
+        );
 
     if (!script) {
         return null;
@@ -18,11 +32,16 @@ function getProtocolData() {
 
     try {
 
-        return JSON.parse(script.textContent);
+        return JSON.parse(
+            script.textContent
+        );
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "No fue posible leer los datos del protocolo.",
+            error
+        );
 
         return null;
 
@@ -35,21 +54,46 @@ function getProtocolData() {
  */
 async function loadProtocol(protocol) {
 
-    await loadCrops(protocol.crop_id);
+    /*
+    |----------------------------------------------------------------------
+    | Cultivo
+    |----------------------------------------------------------------------
+    */
+
+    await loadCrops(
+        protocol.crop_id
+    );
+
+    /*
+    |----------------------------------------------------------------------
+    | Problema
+    |----------------------------------------------------------------------
+    */
 
     await loadProblems(
         protocol.crop_id,
         protocol.problem_id
     );
 
+    /*
+    |----------------------------------------------------------------------
+    | Aplicaciones
+    |----------------------------------------------------------------------
+    */
+
     if (
-        protocol.applications &&
+        Array.isArray(protocol.applications) &&
         protocol.applications.length
     ) {
 
-        for (const application of protocol.applications) {
+        for (
+            const application
+            of protocol.applications
+        ) {
 
-            await addApplication(application);
+            await addApplication(
+                application
+            );
 
         }
 
@@ -69,42 +113,74 @@ document.addEventListener(
     async () => {
 
         const cropSelect =
-            document.getElementById("crop_id");
+            document.getElementById(
+                "crop_id"
+            );
 
         if (!cropSelect) {
             return;
         }
 
+        /*
+        |------------------------------------------------------------------
+        | Registrar eventos
+        |------------------------------------------------------------------
+        */
+
         registerApplicationEvents();
 
         registerProductEvents();
+
+        registerActiveIngredientEvents();
+
+        /*
+        |------------------------------------------------------------------
+        | Cambio de cultivo
+        |------------------------------------------------------------------
+        |
+        | Esto debe funcionar tanto al crear como al editar.
+        |
+        */
+
+        cropSelect.addEventListener(
+            "change",
+            async () => {
+
+                await loadProblems(
+                    cropSelect.value
+                );
+
+            }
+        );
+
+        /*
+        |------------------------------------------------------------------
+        | Comprobar edición
+        |------------------------------------------------------------------
+        */
 
         const protocol =
             getProtocolData();
 
         if (protocol) {
 
-            await loadProtocol(protocol);
-
-        } else {
-
-            await loadCrops();
-
-            cropSelect.addEventListener(
-                "change",
-                async () => {
-
-                    await loadProblems(
-                        cropSelect.value
-                    );
-
-                }
+            await loadProtocol(
+                protocol
             );
 
-            await addApplication();
+            return;
 
         }
 
+        /*
+        |------------------------------------------------------------------
+        | Nuevo protocolo
+        |------------------------------------------------------------------
+        */
+
+        await loadCrops();
+
+        await addApplication();
 
     }
 );

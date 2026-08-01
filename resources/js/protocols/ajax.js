@@ -17,17 +17,22 @@ export async function loadCrops(selected = null) {
 
     try {
 
-        const response = await fetch("/protocols/crops/search");
+        const response = await fetch(
+            "/protocols/crops/search"
+        );
 
         if (!response.ok) {
-            throw new Error("No fue posible obtener los cultivos.");
+            throw new Error(
+                "No fue posible obtener los cultivos."
+            );
         }
 
         const crops = await response.json();
 
         crops.forEach(crop => {
 
-            const option = document.createElement("option");
+            const option =
+                document.createElement("option");
 
             option.value = crop.id;
             option.textContent = crop.text;
@@ -59,7 +64,8 @@ export async function loadProblems(
     selected = null
 ) {
 
-    const select = document.getElementById("problem_id");
+    const select =
+        document.getElementById("problem_id");
 
     if (!select) {
         return;
@@ -78,18 +84,22 @@ export async function loadProblems(
     try {
 
         const response = await fetch(
-            `/protocols/problems/search?crop_id=${cropId}`
+            `/protocols/problems/search?crop_id=${encodeURIComponent(cropId)}`
         );
 
         if (!response.ok) {
-            throw new Error("No fue posible obtener los problemas.");
+            throw new Error(
+                "No fue posible obtener los problemas."
+            );
         }
 
-        const problems = await response.json();
+        const problems =
+            await response.json();
 
         problems.forEach(problem => {
 
-            const option = document.createElement("option");
+            const option =
+                document.createElement("option");
 
             option.value = problem.id;
             option.textContent = problem.text;
@@ -114,7 +124,7 @@ export async function loadProblems(
 }
 
 /**
- * Obtener productos.
+ * Obtener productos EOFertil.
  */
 export async function loadProducts(
     select,
@@ -138,14 +148,150 @@ export async function loadProducts(
         );
 
         if (!response.ok) {
-            throw new Error("No fue posible obtener los productos.");
+            throw new Error(
+                "No fue posible obtener los productos."
+            );
         }
 
-        const products = await response.json();
+        const products =
+            await response.json();
 
         products.forEach(product => {
 
-            const option = document.createElement("option");
+            const option =
+                document.createElement("option");
+
+            option.value = product.id;
+            option.textContent = product.text;
+
+            if (
+                selected !== null &&
+                Number(selected) === Number(product.id)
+            ) {
+                option.selected = true;
+            }
+
+            select.appendChild(option);
+
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+/**
+ * Obtener ingredientes activos.
+ */
+export async function loadActiveIngredients(
+    select,
+    selected = null
+) {
+
+    if (!select) {
+        return;
+    }
+
+    select.innerHTML = `
+        <option value="">
+            Seleccione un ingrediente activo
+        </option>
+    `;
+
+    try {
+
+        const response = await fetch(
+            "/protocols/active-ingredients/search"
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                "No fue posible obtener los ingredientes activos."
+            );
+        }
+
+        const activeIngredients =
+            await response.json();
+
+        activeIngredients.forEach(
+            activeIngredient => {
+
+                const option =
+                    document.createElement("option");
+
+                option.value =
+                    activeIngredient.id;
+
+                option.textContent =
+                    activeIngredient.text;
+
+                if (
+                    selected !== null &&
+                    Number(selected) ===
+                        Number(activeIngredient.id)
+                ) {
+                    option.selected = true;
+                }
+
+                select.appendChild(option);
+
+            }
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+/**
+ * Obtener productos vinculados
+ * a un ingrediente activo.
+ */
+export async function loadActiveIngredientProducts(
+    select,
+    activeIngredientId,
+    selected = null
+) {
+
+    if (!select) {
+        return;
+    }
+
+    select.innerHTML = `
+        <option value="">
+            Seleccione un producto
+        </option>
+    `;
+
+    if (!activeIngredientId) {
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `/protocols/active-ingredients/${encodeURIComponent(activeIngredientId)}/products`
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                "No fue posible obtener los productos del ingrediente activo."
+            );
+        }
+
+        const products =
+            await response.json();
+
+        products.forEach(product => {
+
+            const option =
+                document.createElement("option");
 
             option.value = product.id;
             option.textContent = product.text;

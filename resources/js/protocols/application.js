@@ -1,4 +1,5 @@
 import { addProduct } from "./product";
+import { addActiveIngredient } from "./activeIngredient";
 import { renumberApplications } from "./helpers";
 
 /**
@@ -6,12 +7,25 @@ import { renumberApplications } from "./helpers";
  *
  * @param {Object|null} applicationData
  */
-export async function addApplication(applicationData = null) {
+export async function addApplication(
+    applicationData = null
+) {
 
     const template =
-        document.getElementById("application-template");
+        document.getElementById(
+            "application-template"
+        );
 
     if (!template) {
+        return;
+    }
+
+    const container =
+        document.getElementById(
+            "applications-container"
+        );
+
+    if (!container) {
         return;
     }
 
@@ -19,47 +33,57 @@ export async function addApplication(applicationData = null) {
         template.content.cloneNode(true);
 
     const application =
-        clone.firstElementChild;
+        clone.querySelector(
+            ".application-card"
+        );
 
-    document
-        .getElementById("applications-container")
-        .appendChild(application);
+    if (!application) {
+        return;
+    }
+
+    container.appendChild(application);
 
     const applicationCard =
-        document.querySelector(
-            "#applications-container .application-card:last-child"
-        );
-
-   /*
-|--------------------------------------------------------------------------
-| Tipo de aplicación y descripción
-|--------------------------------------------------------------------------
-*/
-
-if (applicationData) {
-
-    const type =
-        applicationCard.querySelector(
-            ".application-type"
-        );
-
-    type.value =
-        applicationData.application_type ?? "";
-
-    const description =
-        applicationCard.querySelector(
-            ".application-description"
-        );
-
-    description.value =
-        applicationData.description ?? "";
-
-}
+        container.lastElementChild;
 
     /*
-    |--------------------------------------------------------------------------
-    | Productos
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
+    | Tipo de aplicación y descripción
+    |----------------------------------------------------------------------
+    */
+
+    if (applicationData) {
+
+        const type =
+            applicationCard.querySelector(
+                ".application-type"
+            );
+
+        const description =
+            applicationCard.querySelector(
+                ".application-description"
+            );
+
+        if (type) {
+
+            type.value =
+                applicationData.application_type ?? "";
+
+        }
+
+        if (description) {
+
+            description.value =
+                applicationData.description ?? "";
+
+        }
+
+    }
+
+    /*
+    |----------------------------------------------------------------------
+    | Productos EOFertil
+    |----------------------------------------------------------------------
     */
 
     if (
@@ -68,7 +92,10 @@ if (applicationData) {
         applicationData.products.length
     ) {
 
-        for (const product of applicationData.products) {
+        for (
+            const product
+            of applicationData.products
+        ) {
 
             await addProduct(
                 applicationCard,
@@ -79,9 +106,50 @@ if (applicationData) {
 
     } else {
 
-        await addProduct(applicationCard);
+        /*
+        | Una aplicación nueva comienza con
+        | una fila para producto EOFertil.
+        */
+
+        await addProduct(
+            applicationCard
+        );
 
     }
+
+    /*
+    |----------------------------------------------------------------------
+    | Ingredientes activos
+    |----------------------------------------------------------------------
+    */
+
+    if (
+        applicationData &&
+        Array.isArray(
+            applicationData.active_ingredients
+        ) &&
+        applicationData.active_ingredients.length
+    ) {
+
+        for (
+            const activeIngredient
+            of applicationData.active_ingredients
+        ) {
+
+            await addActiveIngredient(
+                applicationCard,
+                activeIngredient
+            );
+
+        }
+
+    }
+
+    /*
+    |----------------------------------------------------------------------
+    | Renumerar
+    |----------------------------------------------------------------------
+    */
 
     renumberApplications();
 
@@ -93,7 +161,9 @@ if (applicationData) {
 export function removeApplication(button) {
 
     const application =
-        button.closest(".application-card");
+        button.closest(
+            ".application-card"
+        );
 
     if (!application) {
         return;
@@ -111,9 +181,9 @@ export function removeApplication(button) {
 export function registerApplicationEvents() {
 
     /*
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     | Agregar aplicación
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     */
 
     const addButton =
@@ -135,9 +205,9 @@ export function registerApplicationEvents() {
     }
 
     /*
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     | Eliminar aplicación
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     */
 
     document.addEventListener(
@@ -153,7 +223,9 @@ export function registerApplicationEvents() {
                 return;
             }
 
-            removeApplication(button);
+            removeApplication(
+                button
+            );
 
         }
     );

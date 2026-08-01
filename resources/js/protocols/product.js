@@ -2,7 +2,8 @@ import { loadProducts } from "./ajax";
 import { renumberApplications } from "./helpers";
 
 /**
- * Agrega un producto a una aplicación.
+ * Agrega un producto EOFertil
+ * a una aplicación.
  *
  * @param {HTMLElement} applicationCard
  * @param {Object|null} productData
@@ -13,7 +14,9 @@ export async function addProduct(
 ) {
 
     const template =
-        document.getElementById("product-template");
+        document.getElementById(
+            "product-template"
+        );
 
     if (!template || !applicationCard) {
         return;
@@ -23,10 +26,18 @@ export async function addProduct(
         template.content.cloneNode(true);
 
     const row =
-        clone.querySelector(".product-row");
+        clone.querySelector(
+            ".product-row"
+        );
 
     const productsContainer =
-        applicationCard.querySelector(".products-container");
+        applicationCard.querySelector(
+            ".products-container"
+        );
+
+    if (!row || !productsContainer) {
+        return;
+    }
 
     productsContainer.appendChild(row);
 
@@ -34,38 +45,58 @@ export async function addProduct(
         productsContainer.lastElementChild;
 
     const productSelect =
-        newRow.querySelector(".product-select");
+        newRow.querySelector(
+            ".product-select"
+        );
 
     /*
-    |--------------------------------------------------------------------------
-    | Cargar productos
-    |--------------------------------------------------------------------------
+    |--------------------------------------------------------------
+    | Cargar productos EOFertil
+    |--------------------------------------------------------------
     */
 
-    await loadProducts(productSelect);
+    await loadProducts(
+        productSelect,
+        productData?.product_id ?? null
+    );
 
     /*
-    |--------------------------------------------------------------------------
-    | Editar
-    |--------------------------------------------------------------------------
+    |--------------------------------------------------------------
+    | Cargar información existente
+    |--------------------------------------------------------------
     */
 
     if (productData) {
 
-        productSelect.value =
-            productData.product_id ?? "";
-
         const dose =
-            newRow.querySelector(".dose-input");
+            newRow.querySelector(
+                ".dose-input"
+            );
 
-        dose.value =
-            productData.dose ?? "";
+        const unit =
+            newRow.querySelector(
+                ".unit-input"
+            );
 
-        const observations =
-            newRow.querySelector(".observations-input");
+        const applicationBase =
+            newRow.querySelector(
+                ".application-base-input"
+            );
 
-        observations.value =
-            productData.observations ?? "";
+        if (dose) {
+            dose.value =
+                productData.dose ?? "";
+        }
+
+        if (unit) {
+            unit.value =
+                productData.unit ?? "";
+        }
+
+        if (applicationBase) {
+            applicationBase.value =
+                productData.application_base ?? "";
+        }
 
     }
 
@@ -74,12 +105,14 @@ export async function addProduct(
 }
 
 /**
- * Eliminar producto.
+ * Eliminar producto EOFertil.
  */
 export function removeProduct(button) {
 
     const row =
-        button.closest(".product-row");
+        button.closest(
+            ".product-row"
+        );
 
     if (!row) {
         return;
@@ -92,7 +125,7 @@ export function removeProduct(button) {
 }
 
 /**
- * Registrar eventos.
+ * Registrar eventos de productos EOFertil.
  */
 export function registerProductEvents() {
 
@@ -101,9 +134,9 @@ export function registerProductEvents() {
         async event => {
 
             /*
-            |--------------------------------------------------------------------------
+            |----------------------------------------------------------
             | Agregar producto
-            |--------------------------------------------------------------------------
+            |----------------------------------------------------------
             */
 
             const addButton =
@@ -118,16 +151,22 @@ export function registerProductEvents() {
                         ".application-card"
                     );
 
-                await addProduct(application);
+                if (!application) {
+                    return;
+                }
+
+                await addProduct(
+                    application
+                );
 
                 return;
 
             }
 
             /*
-            |--------------------------------------------------------------------------
+            |----------------------------------------------------------
             | Eliminar producto
-            |--------------------------------------------------------------------------
+            |----------------------------------------------------------
             */
 
             const removeButton =
@@ -137,7 +176,9 @@ export function registerProductEvents() {
 
             if (removeButton) {
 
-                removeProduct(removeButton);
+                removeProduct(
+                    removeButton
+                );
 
             }
 

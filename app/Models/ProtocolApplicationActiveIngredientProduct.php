@@ -5,10 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ProtocolApplicationProduct extends Model
+class ProtocolApplicationActiveIngredientProduct extends Model
 {
     protected $fillable = [
-        'protocol_application_id',
+        'protocol_application_active_ingredient_id',
         'product_id',
         'dose',
         'unit',
@@ -20,18 +20,18 @@ class ProtocolApplicationProduct extends Model
     ];
 
     /**
-     * Aplicación del protocolo a la que pertenece.
+     * Ingrediente activo de la aplicación al que pertenece.
      */
-    public function application(): BelongsTo
+    public function applicationActiveIngredient(): BelongsTo
     {
         return $this->belongsTo(
-            ProtocolApplication::class,
-            'protocol_application_id'
+            ProtocolApplicationActiveIngredient::class,
+            'protocol_application_active_ingredient_id'
         );
     }
 
     /**
-     * Producto EOFertil seleccionado.
+     * Producto recomendado.
      */
     public function product(): BelongsTo
     {

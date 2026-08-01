@@ -49,13 +49,21 @@ class ProtocolService
             ]);
 
             /*
-             |------------------------------------
-             | Eliminamos todas las aplicaciones
-             | y las recreamos.
-             |------------------------------------
-             */
+            |--------------------------------------------------------------------------
+            | Eliminar aplicaciones anteriores
+            |--------------------------------------------------------------------------
+            |
+            | Las relaciones hijas se eliminan mediante cascadeOnDelete.
+            |
+            */
 
             $protocol->applications()->delete();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Recrear aplicaciones
+            |--------------------------------------------------------------------------
+            */
 
             $this->syncApplications(
                 $protocol,
@@ -72,6 +80,7 @@ class ProtocolService
     public function delete(Protocol $protocol): void
     {
         DB::transaction(function () use ($protocol) {
+
             $protocol->delete();
         });
     }
@@ -86,21 +95,49 @@ class ProtocolService
 
         foreach ($applications as $applicationData) {
 
+            /*
+            |--------------------------------------------------------------------------
+            | Crear aplicación
+            |--------------------------------------------------------------------------
+            */
+
             $application = $protocol->applications()->create([
-                'application_number' => $applicationData['application_number'],
-                'application_type' => $applicationData['application_type'] ?? null,
-                'description' => $applicationData['description'] ?? null,
+                'application_number' =>
+                $applicationData['application_number'],
+
+                'application_type' =>
+                $applicationData['application_type'] ?? null,
+
+                'description' =>
+                $applicationData['description'] ?? null,
             ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Productos EOFertil directos
+            |--------------------------------------------------------------------------
+            */
 
             $this->syncProducts(
                 $application,
-                $applicationData['products']
+                $applicationData['products'] ?? []
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Ingredientes activos
+            |--------------------------------------------------------------------------
+            */
+
+            $this->syncActiveIngredients(
+                $application,
+                $applicationData['active_ingredients'] ?? []
             );
         }
     }
 
     /**
-     * Crear todos los productos de una aplicación.
+     * Crear productos EOFertil directos de una aplicación.
      */
     private function syncProducts(
         ProtocolApplication $application,
@@ -110,10 +147,68 @@ class ProtocolService
         foreach ($products as $productData) {
 
             $application->products()->create([
-                'product_id' => $productData['product_id'],
-                'dose' => $productData['dose'],
-                'observations' => $productData['observations'] ?? null,
+                'product_id' =>
+                $productData['product_id'],
+
+                'dose' =>
+                $productData['dose'],
+
+                'unit' =>
+                trim($productData['unit']),
+
+                'application_base' =>
+                trim($productData['application_base']),
             ]);
+        }
+    }
+
+    /**
+     * Crear ingredientes activos de una aplicación.
+     */
+    private function syncActiveIngredients(
+        ProtocolApplication $application,
+        array $activeIngredients
+    ): void {
+
+        foreach ($activeIngredients as $activeIngredientData) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Crear ingrediente activo dentro de la aplicación
+            |--------------------------------------------------------------------------
+            */
+
+            $protocolActiveIngredient =
+                $application->activeIngredients()->create([
+                    'active_ingredient_id' =>
+                    $activeIngredientData['active_ingredient_id'],
+                ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Crear productos recomendados para ese ingrediente
+            |--------------------------------------------------------------------------
+            */
+
+            foreach (
+                $activeIngredientData['products'] ?? []
+                as $productData
+            ) {
+
+                $protocolActiveIngredient->products()->create([
+                    'product_id' =>
+                    $productData['product_id'],
+
+                    'dose' =>
+                    $productData['dose'],
+
+                    'unit' =>
+                    trim($productData['unit']),
+
+                    'application_base' =>
+                    trim($productData['application_base']),
+                ]);
+            }
         }
     }
 

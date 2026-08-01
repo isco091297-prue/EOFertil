@@ -3,64 +3,114 @@
  */
 export function renumberApplications() {
 
-    const applications = document.querySelectorAll(".application-card");
-
-    applications.forEach((application, applicationIndex) => {
-
-        application.dataset.index = applicationIndex;
-
-        const number = application.querySelector(".application-number");
-
-        if (number) {
-            number.textContent = applicationIndex + 1;
-        }
-
-        const numberInput = application.querySelector(
-            ".application-number-input"
+    const applications =
+        document.querySelectorAll(
+            ".application-card"
         );
 
-        if (numberInput) {
+    applications.forEach(
+        (application, applicationIndex) => {
 
-            numberInput.name =
-                `applications[${applicationIndex}][application_number]`;
+            application.dataset.index =
+                applicationIndex;
 
-            numberInput.value =
-                applicationIndex + 1;
+            /*
+            |--------------------------------------------------------------
+            | Número de aplicación
+            |--------------------------------------------------------------
+            */
+
+            const number =
+                application.querySelector(
+                    ".application-number"
+                );
+
+            if (number) {
+                number.textContent =
+                    applicationIndex + 1;
+            }
+
+            const numberInput =
+                application.querySelector(
+                    ".application-number-input"
+                );
+
+            if (numberInput) {
+
+                numberInput.name =
+                    `applications[${applicationIndex}][application_number]`;
+
+                numberInput.value =
+                    applicationIndex + 1;
+
+            }
+
+            /*
+            |--------------------------------------------------------------
+            | Tipo de aplicación
+            |--------------------------------------------------------------
+            */
+
+            const applicationType =
+                application.querySelector(
+                    ".application-type"
+                );
+
+            if (applicationType) {
+
+                applicationType.name =
+                    `applications[${applicationIndex}][application_type]`;
+
+            }
+
+            /*
+            |--------------------------------------------------------------
+            | Descripción
+            |--------------------------------------------------------------
+            */
+
+            const description =
+                application.querySelector(
+                    ".application-description"
+                );
+
+            if (description) {
+
+                description.name =
+                    `applications[${applicationIndex}][description]`;
+
+            }
+
+            /*
+            |--------------------------------------------------------------
+            | Productos EOFertil
+            |--------------------------------------------------------------
+            */
+
+            renumberProducts(
+                application,
+                applicationIndex
+            );
+
+            /*
+            |--------------------------------------------------------------
+            | Ingredientes activos
+            |--------------------------------------------------------------
+            */
+
+            renumberActiveIngredients(
+                application,
+                applicationIndex
+            );
 
         }
-    const applicationType = application.querySelector(
-    ".application-type"
-);
-
-if (applicationType) {
-
-    applicationType.name =
-        `applications[${applicationIndex}][application_type]`;
-
-}
-
-const description = application.querySelector(
-    ".application-description"
-);
-
-if (description) {
-
-    description.name =
-        `applications[${applicationIndex}][description]`;
-
-}
-
-        renumberProducts(
-            application,
-            applicationIndex
-        );
-
-    });
+    );
 
 }
 
 /**
- * Renumera todos los productos de una aplicación.
+ * Renumera los productos EOFertil
+ * de una aplicación.
  */
 export function renumberProducts(
     application,
@@ -68,40 +118,239 @@ export function renumberProducts(
 ) {
 
     const rows =
-        application.querySelectorAll(".product-row");
+        application.querySelectorAll(
+            ".products-container .product-row"
+        );
 
-    rows.forEach((row, productIndex) => {
+    rows.forEach(
+        (row, productIndex) => {
 
-        const productSelect =
-            row.querySelector(".product-select");
+            /*
+            |----------------------------------------------------------
+            | Producto
+            |----------------------------------------------------------
+            */
 
-        if (productSelect) {
+            const productSelect =
+                row.querySelector(
+                    ".product-select"
+                );
 
-            productSelect.name =
-                `applications[${applicationIndex}][products][${productIndex}][product_id]`;
+            if (productSelect) {
+
+                productSelect.name =
+                    `applications[${applicationIndex}][products][${productIndex}][product_id]`;
+
+            }
+
+            /*
+            |----------------------------------------------------------
+            | Dosis
+            |----------------------------------------------------------
+            */
+
+            const doseInput =
+                row.querySelector(
+                    ".dose-input"
+                );
+
+            if (doseInput) {
+
+                doseInput.name =
+                    `applications[${applicationIndex}][products][${productIndex}][dose]`;
+
+            }
+
+            /*
+            |----------------------------------------------------------
+            | Unidad
+            |----------------------------------------------------------
+            */
+
+            const unitInput =
+                row.querySelector(
+                    ".unit-input"
+                );
+
+            if (unitInput) {
+
+                unitInput.name =
+                    `applications[${applicationIndex}][products][${productIndex}][unit]`;
+
+            }
+
+            /*
+            |----------------------------------------------------------
+            | Base de aplicación
+            |----------------------------------------------------------
+            */
+
+            const applicationBaseInput =
+                row.querySelector(
+                    ".application-base-input"
+                );
+
+            if (applicationBaseInput) {
+
+                applicationBaseInput.name =
+                    `applications[${applicationIndex}][products][${productIndex}][application_base]`;
+
+            }
 
         }
+    );
 
-        const doseInput =
-            row.querySelector(".dose-input");
+}
 
-        if (doseInput) {
+/**
+ * Renumera los ingredientes activos
+ * de una aplicación.
+ */
+export function renumberActiveIngredients(
+    application,
+    applicationIndex
+) {
 
-            doseInput.name =
-                `applications[${applicationIndex}][products][${productIndex}][dose]`;
+    const activeIngredientCards =
+        application.querySelectorAll(
+            ".active-ingredients-container .active-ingredient-card"
+        );
+
+    activeIngredientCards.forEach(
+        (
+            activeIngredientCard,
+            activeIngredientIndex
+        ) => {
+
+            activeIngredientCard.dataset.index =
+                activeIngredientIndex;
+
+            /*
+            |----------------------------------------------------------
+            | Ingrediente activo
+            |----------------------------------------------------------
+            */
+
+            const activeIngredientSelect =
+                activeIngredientCard.querySelector(
+                    ".active-ingredient-select"
+                );
+
+            if (activeIngredientSelect) {
+
+                activeIngredientSelect.name =
+                    `applications[${applicationIndex}][active_ingredients][${activeIngredientIndex}][active_ingredient_id]`;
+
+            }
+
+            /*
+            |----------------------------------------------------------
+            | Productos recomendados del ingrediente activo
+            |----------------------------------------------------------
+            */
+
+            renumberActiveIngredientProducts(
+                activeIngredientCard,
+                applicationIndex,
+                activeIngredientIndex
+            );
 
         }
+    );
 
-        const observationsInput =
-            row.querySelector(".observations-input");
+}
 
-        if (observationsInput) {
+/**
+ * Renumera los productos recomendados
+ * pertenecientes a un ingrediente activo.
+ */
+export function renumberActiveIngredientProducts(
+    activeIngredientCard,
+    applicationIndex,
+    activeIngredientIndex
+) {
 
-            observationsInput.name =
-                `applications[${applicationIndex}][products][${productIndex}][observations]`;
+    const rows =
+        activeIngredientCard.querySelectorAll(
+            ".active-ingredient-products-container .active-ingredient-product-row"
+        );
+
+    rows.forEach(
+        (row, productIndex) => {
+
+            /*
+            |----------------------------------------------------------
+            | Producto
+            |----------------------------------------------------------
+            */
+
+            const productSelect =
+                row.querySelector(
+                    ".active-ingredient-product-select"
+                );
+
+            if (productSelect) {
+
+                productSelect.name =
+                    `applications[${applicationIndex}][active_ingredients][${activeIngredientIndex}][products][${productIndex}][product_id]`;
+
+            }
+
+            /*
+            |----------------------------------------------------------
+            | Dosis
+            |----------------------------------------------------------
+            */
+
+            const doseInput =
+                row.querySelector(
+                    ".active-ingredient-product-dose"
+                );
+
+            if (doseInput) {
+
+                doseInput.name =
+                    `applications[${applicationIndex}][active_ingredients][${activeIngredientIndex}][products][${productIndex}][dose]`;
+
+            }
+
+            /*
+            |----------------------------------------------------------
+            | Unidad
+            |----------------------------------------------------------
+            */
+
+            const unitInput =
+                row.querySelector(
+                    ".active-ingredient-product-unit"
+                );
+
+            if (unitInput) {
+
+                unitInput.name =
+                    `applications[${applicationIndex}][active_ingredients][${activeIngredientIndex}][products][${productIndex}][unit]`;
+
+            }
+
+            /*
+            |----------------------------------------------------------
+            | Base de aplicación
+            |----------------------------------------------------------
+            */
+
+            const applicationBaseInput =
+                row.querySelector(
+                    ".active-ingredient-product-application-base"
+                );
+
+            if (applicationBaseInput) {
+
+                applicationBaseInput.name =
+                    `applications[${applicationIndex}][active_ingredients][${activeIngredientIndex}][products][${productIndex}][application_base]`;
+
+            }
 
         }
-
-    });
+    );
 
 }
