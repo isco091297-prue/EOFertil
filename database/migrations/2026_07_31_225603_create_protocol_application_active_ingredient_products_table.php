@@ -1,49 +1,90 @@
 <?php
 
-namespace App\Models;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-
-class ProtocolApplicationActiveIngredient extends Model
+return new class extends Migration
 {
-    protected $fillable = [
-        'protocol_application_id',
-        'active_ingredient_id',
-    ];
-
     /**
-     * Aplicación del protocolo a la que pertenece.
+     * Run the migrations.
      */
-    public function application(): BelongsTo
+    public function up(): void
     {
-        return $this->belongsTo(
-            ProtocolApplication::class,
-            'protocol_application_id'
+        Schema::create(
+            'protocol_application_active_ingredient_products',
+            function (Blueprint $table) {
+
+                $table->id();
+
+                $table->unsignedBigInteger(
+                    'protocol_application_active_ingredient_id'
+                );
+
+                $table->unsignedBigInteger('product_id');
+
+                $table->decimal('dose', 10, 2);
+
+                $table->string('unit', 30);
+
+                $table->string('application_base', 50);
+
+                $table->timestamps();
+
+                /*
+                |----------------------------------------------------------
+                | Evitar producto repetido dentro del mismo ingrediente
+                |----------------------------------------------------------
+                */
+
+                $table->unique(
+                    [
+                        'protocol_application_active_ingredient_id',
+                        'product_id',
+                    ],
+                    'paaip_ingredient_product_unique'
+                );
+
+                /*
+                |----------------------------------------------------------
+                | Ingrediente activo de la aplicación
+                |----------------------------------------------------------
+                */
+
+                $table->foreign(
+                    'protocol_application_active_ingredient_id',
+                    'paaip_ingredient_fk'
+                )
+                    ->references('id')
+                    ->on('protocol_application_active_ingredients')
+                    ->cascadeOnUpdate()
+                    ->cascadeOnDelete();
+
+                /*
+                |----------------------------------------------------------
+                | Producto recomendado
+                |----------------------------------------------------------
+                */
+
+                $table->foreign(
+                    'product_id',
+                    'paaip_product_fk'
+                )
+                    ->references('id')
+                    ->on('products')
+                    ->cascadeOnUpdate()
+                    ->restrictOnDelete();
+            }
         );
     }
 
     /**
-     * Ingrediente activo seleccionado.
+     * Reverse the migrations.
      */
-    public function activeIngredient(): BelongsTo
+    public function down(): void
     {
-        return $this->belongsTo(
-            ActiveIngredient::class,
-            'active_ingredient_id'
+        Schema::dropIfExists(
+            'protocol_application_active_ingredient_products'
         );
     }
-
-    /**
-     * Productos recomendados para este ingrediente activo
-     * dentro de esta aplicación.
-     */
-    public function products(): HasMany
-    {
-        return $this->hasMany(
-            ProtocolApplicationActiveIngredientProduct::class,
-            'protocol_application_active_ingredient_id'
-        );
-    }
-}
+};
