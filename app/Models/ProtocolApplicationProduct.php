@@ -20,7 +20,7 @@ class ProtocolApplicationProduct extends Model
     ];
 
     /**
-     * Aplicación del protocolo a la que pertenece.
+     * Aplicación del receta a la que pertenece.
      */
     public function application(): BelongsTo
     {

@@ -32,7 +32,7 @@ class GuideService
     }
 
     /**
-     * Obtener el protocolo completo.
+     * Obtener el receta completo.
      */
     public function protocol(
         int $cropId,

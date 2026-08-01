@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Detalle del Protocolo')
+@section('title', 'Detalle de la Receta')
 
 @section('content')
 
@@ -19,7 +19,7 @@
                 </h1>
 
                 <p class="mt-1 text-gray-500">
-                    Información completa del protocolo.
+                    Información completa del receta.
                 </p>
 
             </div>

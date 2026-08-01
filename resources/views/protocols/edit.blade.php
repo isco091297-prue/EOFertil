@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Protocolo')
+@section('title', 'Editar Receta')
 
 @section('content')
 
@@ -11,11 +11,11 @@
             <div>
 
                 <h1 class="text-3xl font-bold text-gray-800">
-                    Editar Protocolo
+                    Editar Receta
                 </h1>
 
                 <p class="mt-1 text-gray-500">
-                    Modifique la información del protocolo.
+                    Modifique la información del receta.
                 </p>
 
             </div>

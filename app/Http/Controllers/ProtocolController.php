@@ -25,7 +25,7 @@ class ProtocolController extends Controller
     ) {}
 
     /**
-     * Mostrar listado de protocolos.
+     * Mostrar listado de receta.
      */
     public function index(): View
     {
@@ -51,7 +51,7 @@ class ProtocolController extends Controller
     }
 
     /**
-     * Guardar un protocolo.
+     * Guardar un receta.
      */
     public function store(
         StoreProtocolRequest $request
@@ -65,12 +65,12 @@ class ProtocolController extends Controller
             ->route('protocols.index')
             ->with(
                 'success',
-                'Protocolo creado correctamente.'
+                'Receta creada correctamente.'
             );
     }
 
     /**
-     * Mostrar un protocolo.
+     * Mostrar un receta.
      */
     public function show(
         Protocol $protocol
@@ -158,7 +158,7 @@ class ProtocolController extends Controller
     }
 
     /**
-     * Actualizar un protocolo.
+     * Actualizar un receta.
      */
     public function update(
         UpdateProtocolRequest $request,
@@ -174,12 +174,12 @@ class ProtocolController extends Controller
             ->route('protocols.index')
             ->with(
                 'success',
-                'Protocolo actualizado correctamente.'
+                'Receta actualizada correctamente.'
             );
     }
 
     /**
-     * Eliminar un protocolo.
+     * Eliminar un receta.
      */
     public function destroy(
         Protocol $protocol
@@ -193,7 +193,7 @@ class ProtocolController extends Controller
             ->route('protocols.index')
             ->with(
                 'success',
-                'Protocolo eliminado correctamente.'
+                'Receta eliminada correctamente.'
             );
     }
 

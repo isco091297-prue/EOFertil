@@ -16,7 +16,7 @@ class ProtocolApplication extends Model
     ];
 
     /**
-     * Protocolo al que pertenece la aplicación.
+     * Receta al que pertenece la aplicación.
      */
     public function protocol(): BelongsTo
     {

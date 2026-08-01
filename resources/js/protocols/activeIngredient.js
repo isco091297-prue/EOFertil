@@ -75,7 +75,7 @@ export async function addActiveIngredient(
     | Modo edición
     |--------------------------------------------------------------------------
     |
-    | Si estamos editando un protocolo, cargamos exactamente
+    | Si estamos editando un receta, cargamos exactamente
     | los productos que ya estaban guardados con sus dosis.
     |
     */
@@ -105,7 +105,7 @@ export async function addActiveIngredient(
  * Agregar una fila de producto recomendado.
  *
  * Esta función se utiliza principalmente al editar
- * un protocolo existente.
+ * un receta existente.
  *
  * @param {HTMLElement} activeIngredientCard
  * @param {Object|null} productData

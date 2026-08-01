@@ -17,7 +17,7 @@ import {
 } from "./activeIngredient";
 
 /**
- * Obtener datos del protocolo en edición.
+ * Obtener datos del receta en edición.
  */
 function getProtocolData() {
 
@@ -39,7 +39,7 @@ function getProtocolData() {
     } catch (error) {
 
         console.error(
-            "No fue posible leer los datos del protocolo.",
+            "No fue posible leer los datos del receta.",
             error
         );
 
@@ -50,7 +50,7 @@ function getProtocolData() {
 }
 
 /**
- * Cargar protocolo existente.
+ * Cargar receta existente.
  */
 async function loadProtocol(protocol) {
 
@@ -174,7 +174,7 @@ document.addEventListener(
 
         /*
         |------------------------------------------------------------------
-        | Nuevo protocolo
+        | Nuevo reeta
         |------------------------------------------------------------------
         */
 

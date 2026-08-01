@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 class ProtocolService
 {
     /**
-     * Crear un protocolo completo.
+     * Crear un receta completo.
      */
     public function store(array $data): Protocol
     {
@@ -32,7 +32,7 @@ class ProtocolService
     }
 
     /**
-     * Actualizar un protocolo completo.
+     * Actualizar un receta completo.
      */
     public function update(
         Protocol $protocol,
@@ -75,7 +75,7 @@ class ProtocolService
     }
 
     /**
-     * Eliminar un protocolo.
+     * Eliminar un receta.
      */
     public function delete(Protocol $protocol): void
     {
@@ -86,7 +86,7 @@ class ProtocolService
     }
 
     /**
-     * Crear todas las aplicaciones del protocolo.
+     * Crear todas las aplicaciones del receta.
      */
     private function syncApplications(
         Protocol $protocol,
@@ -213,7 +213,7 @@ class ProtocolService
     }
 
     /**
-     * Generar el código automático del protocolo.
+     * Generar el código automático del receta.
      */
     private function generateCode(): string
     {

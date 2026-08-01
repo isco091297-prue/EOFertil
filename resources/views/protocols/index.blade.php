@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Protocolos')
+@section('title', 'Recetas')
 
 @section('content')
 
@@ -12,18 +12,18 @@
             <div>
 
                 <h1 class="text-3xl font-bold text-gray-800">
-                    Protocolos
+                    Recetas
                 </h1>
 
                 <p class="text-gray-500 mt-1">
-                    Administración de protocolos fitosanitarios.
+                    Administración de recetas fitosanitarios.
                 </p>
 
             </div>
 
             <a href="{{ route('protocols.create') }}"
                 class="inline-flex items-center rounded-lg bg-indigo-600 px-5 py-2.5 text-white hover:bg-indigo-700 transition">
-                Nuevo Protocolo
+                Nueva Receta
             </a>
 
         </div>
@@ -118,7 +118,7 @@
                                     </a>
 
                                     <form action="{{ route('protocols.destroy', $protocol) }}" method="POST"
-                                        onsubmit="return confirm('¿Eliminar este protocolo?')">
+                                        onsubmit="return confirm('¿Eliminar esta receta?')">
 
                                         @csrf
                                         @method('DELETE')
@@ -141,7 +141,7 @@
 
                             <td colspan="5" class="px-6 py-10 text-center text-gray-500">
 
-                                No existen protocolos registrados.
+                                No existen recetas registrados.
 
                             </td>
 

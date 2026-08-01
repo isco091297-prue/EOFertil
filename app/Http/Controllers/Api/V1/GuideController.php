@@ -60,7 +60,7 @@ class GuideController extends Controller
         if (!$protocol) {
             return response()->json([
                 'success' => false,
-                'message' => 'No existe un protocolo para este problema.',
+                'message' => 'No existe un receta para este problema.',
             ], 404);
         }
 
