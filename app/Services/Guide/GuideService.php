@@ -32,7 +32,7 @@ class GuideService
     }
 
     /**
-     * Obtener el receta completo.
+     * Obtener el protocolo completo.
      */
     public function protocol(
         int $cropId,
@@ -47,15 +47,44 @@ class GuideService
 
                 'problem',
 
+                /*
+                |--------------------------------------------------------------------------
+                | Aplicaciones
+                |--------------------------------------------------------------------------
+                */
+
                 'applications',
 
+                /*
+                |--------------------------------------------------------------------------
+                | Productos EOFertil
+                |--------------------------------------------------------------------------
+                */
+
                 'applications.products',
-
                 'applications.products.product',
-
                 'applications.products.product.brand',
-
                 'applications.products.product.category',
+
+                /*
+                |--------------------------------------------------------------------------
+                | Ingredientes activos
+                |--------------------------------------------------------------------------
+                */
+
+                'applications.activeIngredients',
+                'applications.activeIngredients.activeIngredient',
+
+                /*
+                |--------------------------------------------------------------------------
+                | Productos recomendados
+                |--------------------------------------------------------------------------
+                */
+
+                'applications.activeIngredients.products',
+                'applications.activeIngredients.products.product',
+                'applications.activeIngredients.products.product.brand',
+                'applications.activeIngredients.products.product.category',
 
             ])
 

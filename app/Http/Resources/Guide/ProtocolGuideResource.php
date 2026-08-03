@@ -13,7 +13,10 @@ class ProtocolGuideResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
+
             'id' => $this->id,
+
+            'codigo' => $this->code,
 
             'cultivo' => [
                 'id' => $this->crop?->id,
@@ -26,6 +29,7 @@ class ProtocolGuideResource extends JsonResource
             ],
 
             'aplicaciones' => $this->whenLoaded('applications', function () {
+
                 return $this->applications->map(function ($application) {
 
                     return [
@@ -38,6 +42,12 @@ class ProtocolGuideResource extends JsonResource
 
                         'descripcion' => $application->description,
 
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Productos EOFertil
+                        |--------------------------------------------------------------------------
+                        */
+
                         'productos' => $application->products->map(function ($item) {
 
                             return [
@@ -46,11 +56,15 @@ class ProtocolGuideResource extends JsonResource
 
                                 'dosis' => $item->dose,
 
-                                'observaciones' => $item->observations,
+                                'unidad' => $item->unit,
+
+                                'base_aplicacion' => $item->application_base,
 
                                 'producto' => [
 
                                     'id' => $item->product?->id,
+
+                                    'codigo' => $item->product?->code,
 
                                     'nombre' => $item->product?->name,
 
@@ -67,9 +81,66 @@ class ProtocolGuideResource extends JsonResource
                             ];
                         })->values(),
 
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Ingredientes activos
+                        |--------------------------------------------------------------------------
+                        */
+
+                        'ingredientes_activos' => $application->activeIngredients->map(function ($ingredient) {
+
+                            return [
+
+                                'id' => $ingredient->id,
+
+                                'ingrediente_activo' => [
+
+                                    'id' => $ingredient->activeIngredient?->id,
+
+                                    'nombre' => $ingredient->activeIngredient?->name,
+
+                                ],
+
+                                'productos' => $ingredient->products->map(function ($item) {
+
+                                    return [
+
+                                        'id' => $item->id,
+
+                                        'dosis' => $item->dose,
+
+                                        'unidad' => $item->unit,
+
+                                        'base_aplicacion' => $item->application_base,
+
+                                        'producto' => [
+
+                                            'id' => $item->product?->id,
+
+                                            'codigo' => $item->product?->code,
+
+                                            'nombre' => $item->product?->name,
+
+                                            'marca' => $item->product?->brand?->name,
+
+                                            'categoria' => $item->product?->category?->name,
+
+                                            'image_path' => $item->product?->image_path,
+
+                                            'image_url' => $item->product?->image_url,
+
+                                        ],
+
+                                    ];
+                                })->values(),
+
+                            ];
+                        })->values(),
+
                     ];
                 })->values();
             }),
+
         ];
     }
 }
