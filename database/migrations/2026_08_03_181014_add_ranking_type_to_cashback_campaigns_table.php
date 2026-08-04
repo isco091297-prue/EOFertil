@@ -29,9 +29,7 @@ return new class extends Migration
                     'cashback',
                     'sales',
                 ]
-            )
-                ->default('cashback')
-                ->after('tipo');
+            )->default('cashback');
         });
     }
 
@@ -42,9 +40,7 @@ return new class extends Migration
     {
         Schema::table('cashback_campaigns', function (Blueprint $table) {
 
-            $table->dropColumn(
-                'ranking_type'
-            );
+            $table->dropColumn('ranking_type');
         });
     }
 };
