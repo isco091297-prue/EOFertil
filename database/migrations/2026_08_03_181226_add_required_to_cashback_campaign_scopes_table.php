@@ -24,8 +24,7 @@ return new class extends Migration
             */
 
             $table->boolean('required')
-                ->default(true)
-                ->after('scope_id');
+                ->default(true);
         });
     }
 
@@ -36,9 +35,7 @@ return new class extends Migration
     {
         Schema::table('cashback_campaign_scopes', function (Blueprint $table) {
 
-            $table->dropColumn(
-                'required'
-            );
+            $table->dropColumn('required');
         });
     }
 };
