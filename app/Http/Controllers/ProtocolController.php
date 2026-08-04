@@ -10,6 +10,7 @@ use App\Models\Crop;
 use App\Models\Problem;
 use App\Models\Product;
 use App\Models\Protocol;
+use App\Models\Brand;
 
 use App\Services\Protocol\ProtocolService;
 
@@ -294,31 +295,41 @@ class ProtocolController extends Controller
             $request->get('search', '')
         );
 
+        $eofertilBrand = Brand::query()
+            ->where('name', 'EOFertil')
+            ->first();
+
         $products = Product::query()
             ->where('is_active', true)
+            ->when(
+                $eofertilBrand,
+                function ($query) use ($eofertilBrand) {
+                    $query->where(
+                        'brand_id',
+                        $eofertilBrand->id
+                    );
+                }
+            )
             ->when(
                 $search !== '',
                 function ($query) use ($search) {
 
-                    $query->where(
-                        function ($q) use ($search) {
+                    $query->where(function ($q) use ($search) {
 
-                            $q->where(
-                                'code',
+                        $q->where(
+                            'code',
+                            'like',
+                            "%{$search}%"
+                        )
+                            ->orWhere(
+                                'name',
                                 'like',
                                 "%{$search}%"
-                            )
-                                ->orWhere(
-                                    'name',
-                                    'like',
-                                    "%{$search}%"
-                                );
-                        }
-                    );
+                            );
+                    });
                 }
             )
             ->orderBy('name')
-
             ->get([
                 'id',
                 'code',
@@ -329,8 +340,7 @@ class ProtocolController extends Controller
             $products->map(
                 fn($product) => [
                     'id' => $product->id,
-                    'text' =>
-                    "{$product->code} - {$product->name}",
+                    'text' => "{$product->code} - {$product->name}",
                 ]
             )
         );
@@ -361,7 +371,7 @@ class ProtocolController extends Controller
                 }
             )
             ->orderBy('name')
-            
+
             ->get([
                 'id',
                 'name',
