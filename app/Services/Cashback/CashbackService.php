@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Cashback;
 
 use App\Models\CashbackTransaction;
 use App\Models\Invoice;

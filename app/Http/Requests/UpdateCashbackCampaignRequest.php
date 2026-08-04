@@ -17,6 +17,12 @@ class UpdateCashbackCampaignRequest extends FormRequest
     {
         return [
 
+            /*
+            |--------------------------------------------------------------------------
+            | Información general
+            |--------------------------------------------------------------------------
+            */
+
             'nombre' => [
                 'required',
                 'string',
@@ -28,15 +34,27 @@ class UpdateCashbackCampaignRequest extends FormRequest
                 'string',
             ],
 
-            'porcentaje' => [
+            'campaign_type' => [
                 'required',
+                'in:cashback,ranking_cashback,ranking_accumulated',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Configuración
+            |--------------------------------------------------------------------------
+            */
+
+            'porcentaje' => [
+                'nullable',
                 'numeric',
                 'min:0.01',
                 'max:100',
+                'required_if:campaign_type,cashback',
             ],
 
             'valor_alerta_factura' => [
-                'required',
+                'nullable',
                 'numeric',
                 'min:0',
             ],
@@ -56,20 +74,35 @@ class UpdateCashbackCampaignRequest extends FormRequest
                     $inicio = $this->fecha_inicio;
                     $fin = $value;
 
-                    $campaign = $this->route('cashbackCampaign')
+                    $campaign =
+                        $this->route('cashbackCampaign')
                         ?? $this->route('cashback_campaign');
 
                     $id = $campaign?->id;
-                    $existe = CashbackCampaign::where('id', '!=', $id)
+
+                    $existe = CashbackCampaign::query()
+
+                        ->where('id', '!=', $id)
+
                         ->where(function ($query) use ($inicio, $fin) {
 
                             $query
                                 ->whereDate('fecha_inicio', '<=', $fin)
                                 ->whereDate('fecha_fin', '>=', $inicio);
-                        })->exists();
+                        })
+
+                        ->where(
+                            'campaign_type',
+                            $this->campaign_type
+                        )
+
+                        ->exists();
 
                     if ($existe) {
-                        $fail('Ya existe una campaña que se cruza con ese rango de fechas.');
+
+                        $fail(
+                            'Ya existe una campaña del mismo tipo que se cruza con ese rango de fechas.'
+                        );
                     }
                 },
             ],
@@ -78,6 +111,48 @@ class UpdateCashbackCampaignRequest extends FormRequest
                 'required',
                 'boolean',
             ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Participantes
+            |--------------------------------------------------------------------------
+            */
+
+            'participant_type' => [
+                'required',
+                'in:all,warehouse,zone,branch',
+            ],
+
+            'warehouse_ids' => [
+                'nullable',
+                'array',
+            ],
+
+            'warehouse_ids.*' => [
+                'integer',
+                'exists:warehouses,id',
+            ],
+
+            'zone_ids' => [
+                'nullable',
+                'array',
+            ],
+
+            'zone_ids.*' => [
+                'integer',
+                'exists:zones,id',
+            ],
+
+            'branch_ids' => [
+                'nullable',
+                'array',
+            ],
+
+            'branch_ids.*' => [
+                'integer',
+                'exists:branches,id',
+            ],
+
         ];
     }
 
@@ -85,20 +160,44 @@ class UpdateCashbackCampaignRequest extends FormRequest
     {
         return [
 
-            'nombre.required' => 'El nombre de la campaña es obligatorio.',
+            'nombre.required' =>
+            'El nombre de la campaña es obligatorio.',
 
-            'porcentaje.required' => 'Debe ingresar el porcentaje.',
-            'porcentaje.numeric' => 'El porcentaje debe ser numérico.',
-            'porcentaje.min' => 'El porcentaje debe ser mayor que 0.',
-            'porcentaje.max' => 'El porcentaje no puede ser mayor a 100.',
+            'campaign_type.required' =>
+            'Debe seleccionar el tipo de campaña.',
 
-            'valor_alerta_factura.required' => 'Debe ingresar el valor de alerta.',
-            'valor_alerta_factura.numeric' => 'El valor de alerta debe ser numérico.',
+            'campaign_type.in' =>
+            'El tipo de campaña no es válido.',
 
-            'fecha_inicio.required' => 'Seleccione la fecha de inicio.',
+            'participant_type.required' =>
+            'Debe indicar quiénes participan.',
 
-            'fecha_fin.required' => 'Seleccione la fecha de fin.',
-            'fecha_fin.after_or_equal' => 'La fecha fin debe ser mayor o igual a la fecha de inicio.',
+            'participant_type.in' =>
+            'El tipo de participantes no es válido.',
+
+            'porcentaje.required_if' =>
+            'Debe ingresar el porcentaje de cashback.',
+
+            'porcentaje.numeric' =>
+            'El porcentaje debe ser numérico.',
+
+            'porcentaje.min' =>
+            'El porcentaje debe ser mayor que cero.',
+
+            'porcentaje.max' =>
+            'El porcentaje no puede ser mayor a 100.',
+
+            'valor_alerta_factura.numeric' =>
+            'El valor de alerta debe ser numérico.',
+
+            'fecha_inicio.required' =>
+            'Seleccione la fecha de inicio.',
+
+            'fecha_fin.required' =>
+            'Seleccione la fecha de fin.',
+
+            'fecha_fin.after_or_equal' =>
+            'La fecha fin debe ser mayor o igual a la fecha de inicio.',
         ];
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Invoice;
 
 use App\Models\Invoice;
 use Illuminate\Support\Facades\DB;
@@ -10,12 +10,15 @@ use App\Models\CashbackCampaign;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\InvoiceItem;
+use App\Services\Cashback\CashbackService;
+use App\Services\Ranking\RankingCalculatorService;
 use Exception;
 
 class InvoiceService
 {
     public function __construct(
-        protected CashbackService $cashbackService
+        protected CashbackService $cashbackService,
+        protected RankingCalculatorService $rankingCalculatorService
     ) {}
 
     /**
@@ -27,38 +30,15 @@ class InvoiceService
     {
         return DB::transaction(function () use ($data) {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Validar información
-            |--------------------------------------------------------------------------
-            */
 
             $this->validateData($data);
 
-            /*
-            |--------------------------------------------------------------------------
-            | Crear factura
-            |--------------------------------------------------------------------------
-            */
-
             $invoice = $this->createInvoice($data);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Crear productos
-            |--------------------------------------------------------------------------
-            */
 
             $totales = $this->createItems(
                 $invoice,
                 $data['items']
             );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Actualizar totales
-            |--------------------------------------------------------------------------
-            */
 
             $this->updateInvoiceTotals(
                 $invoice,
@@ -67,35 +47,17 @@ class InvoiceService
 
             $invoice->refresh();
 
-            /*
-|--------------------------------------------------------------------------
-| Generar cashback
-|--------------------------------------------------------------------------
-*/
-
             $this->cashbackService->generate($invoice);
 
-            /*
-|--------------------------------------------------------------------------
-| Obtener factura actualizada
-|--------------------------------------------------------------------------
-*/
+            $this->rankingCalculatorService->process(
+                $invoice->fresh()
+            );
 
             $updatedInvoice = $invoice->fresh([
                 'cashbackCampaign:id,nombre',
                 'branch:id,name',
                 'items.product:id,name',
             ]);
-
-            /*
-|--------------------------------------------------------------------------
-| Detectar si esta factura recibió el bono de primera factura
-|--------------------------------------------------------------------------
-|
-| No dependemos de columnas adicionales en invoices.
-| La transacción de bonificación es la fuente real del logro.
-|
-*/
 
             $firstInvoiceBonus = CashbackTransaction::where(
                 'user_id',
@@ -114,12 +76,6 @@ class InvoiceService
                     'Bono por registrar tu primera factura'
                 )
                 ->first();
-
-            /*
-|--------------------------------------------------------------------------
-| Información temporal para Flutter
-|--------------------------------------------------------------------------
-*/
 
             $updatedInvoice->setAttribute(
                 'logro_primera_factura',
@@ -144,12 +100,6 @@ class InvoiceService
     private function validateData(array $data): void
     {
 
-        /*
-|--------------------------------------------------------------------------
-| Validar información principal
-|--------------------------------------------------------------------------
-*/
-
         if (
             !isset($data['user_id']) ||
             !is_numeric($data['user_id'])
@@ -173,11 +123,6 @@ class InvoiceService
                 'Debe indicar la campaña de cashback.'
             );
         }
-        /*
-    |--------------------------------------------------------------------------
-    | Validar productos
-    |--------------------------------------------------------------------------
-    */
 
         $productos = [];
 
@@ -214,17 +159,6 @@ class InvoiceService
 
             $productos[] = $item['product_id'];
         }
-        /*
-|--------------------------------------------------------------------------
-| Validar reglas de negocio
-|--------------------------------------------------------------------------
-*/
-
-        /*
-|--------------------------------------------------------------------------
-| Usuario
-|--------------------------------------------------------------------------
-*/
 
         $user = User::find($data['user_id']);
 
@@ -242,23 +176,11 @@ class InvoiceService
             );
         }
 
-        /*
-|--------------------------------------------------------------------------
-| Sucursal
-|--------------------------------------------------------------------------
-*/
-
         $branch = Branch::find($data['branch_id']);
 
         if (!$branch) {
             throw new Exception('La sucursal no existe.');
         }
-
-        /*
-|--------------------------------------------------------------------------
-| Campaña
-|--------------------------------------------------------------------------
-*/
 
         $campaign = CashbackCampaign::find($data['cashback_campaign_id']);
 
@@ -289,11 +211,6 @@ class InvoiceService
                 'La campaña de cashback ya finalizó.'
             );
         }
-        /*
-|--------------------------------------------------------------------------
-| Factura duplicada
-|--------------------------------------------------------------------------
-*/
 
         $invoiceExists = Invoice::where(
             'branch_id',
@@ -310,12 +227,6 @@ class InvoiceService
                 'Ya existe una factura registrada con ese número en esta sucursal.'
             );
         }
-
-        /*
-|--------------------------------------------------------------------------
-| Productos
-|--------------------------------------------------------------------------
-*/
 
         $products = Product::whereIn(
             'id',
@@ -339,9 +250,7 @@ class InvoiceService
             }
         }
     }
-    /**
-     * Crear factura.
-     */
+
     private function createInvoice(array $data): Invoice
     {
         $campaign = CashbackCampaign::findOrFail(
@@ -376,9 +285,7 @@ class InvoiceService
             'estado' => 'procesando',
         ]);
     }
-    /**
-     * Crear productos de la factura.
-     */
+
     private function createItems(
         Invoice $invoice,
         array $items
@@ -402,9 +309,7 @@ class InvoiceService
             'total_productos_participantes' => $totalFactura,
         ];
     }
-    /**
-     * Actualizar totales de la factura.
-     */
+
     private function updateInvoiceTotals(
         Invoice $invoice,
         array $totales

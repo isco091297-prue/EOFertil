@@ -2,14 +2,14 @@
 
 namespace App\Http\Requests;
 
-use App\Models\RewardType;
+use App\Models\RankingReward;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateRankingRewardRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Autorizar.
      */
     public function authorize(): bool
     {
@@ -17,19 +17,11 @@ class UpdateRankingRewardRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Reglas.
      */
     public function rules(): array
     {
-        $rankingReward = $this->route('rankingReward')
-            ?? $this->route('ranking_reward');
-
         return [
-
-            'cashback_campaign_id' => [
-                'required',
-                'exists:cashback_campaigns,id',
-            ],
 
             'reward_type_id' => [
                 'required',
@@ -37,25 +29,52 @@ class UpdateRankingRewardRequest extends FormRequest
             ],
 
             'posicion' => [
-
                 'required',
-
                 'integer',
-
                 'min:1',
-
                 'max:100',
 
-                Rule::unique('ranking_rewards')
-                    ->ignore($rankingReward)
-                    ->where(function ($query) {
+                function (
+                    string $attribute,
+                    mixed $value,
+                    Closure $fail
+                ) {
 
-                        return $query->where(
+                    $campaign = $this->route(
+                        'cashbackCampaign'
+                    );
+
+                    $reward = $this->route(
+                        'rankingReward'
+                    );
+
+                    $exists = RankingReward::query()
+
+                        ->where(
                             'cashback_campaign_id',
-                            $this->cashback_campaign_id
-                        );
-                    }),
+                            $campaign->id
+                        )
 
+                        ->where(
+                            'posicion',
+                            $value
+                        )
+
+                        ->where(
+                            'id',
+                            '!=',
+                            $reward->id
+                        )
+
+                        ->exists();
+
+                    if ($exists) {
+
+                        $fail(
+                            'Ya existe un premio para esa posición en esta campaña.'
+                        );
+                    }
+                },
             ],
 
             'titulo' => [
@@ -72,14 +91,13 @@ class UpdateRankingRewardRequest extends FormRequest
             'valor_referencial' => [
                 'nullable',
                 'numeric',
-                'gt:0',
+                'min:0',
             ],
 
             'multiplicador' => [
                 'nullable',
                 'numeric',
-                'gt:0',
-                'max:100',
+                'min:1',
             ],
 
             'activo' => [
@@ -90,37 +108,37 @@ class UpdateRankingRewardRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator)
+    /**
+     * Mensajes.
+     */
+    public function messages(): array
     {
-        $validator->after(function ($validator) {
+        return [
 
-            $rewardType = RewardType::find(
-                $this->reward_type_id
-            );
+            'reward_type_id.required' =>
+            'Seleccione el tipo de premio.',
 
-            if (!$rewardType) {
-                return;
-            }
+            'reward_type_id.exists' =>
+            'El tipo de premio seleccionado no existe.',
 
-            if ($rewardType->codigo === 'cashback_multiplier') {
+            'posicion.required' =>
+            'Ingrese la posición del ranking.',
 
-                if (empty($this->multiplicador)) {
+            'posicion.integer' =>
+            'La posición debe ser numérica.',
 
-                    $validator->errors()->add(
-                        'multiplicador',
-                        'El multiplicador es obligatorio.'
-                    );
-                }
-            } else {
+            'titulo.required' =>
+            'Ingrese el título del premio.',
 
-                if (empty($this->valor_referencial)) {
+            'valor_referencial.numeric' =>
+            'El valor referencial debe ser numérico.',
 
-                    $validator->errors()->add(
-                        'valor_referencial',
-                        'El valor referencial es obligatorio.'
-                    );
-                }
-            }
-        });
+            'multiplicador.numeric' =>
+            'El multiplicador debe ser numérico.',
+
+            'activo.required' =>
+            'Seleccione el estado.',
+
+        ];
     }
 }

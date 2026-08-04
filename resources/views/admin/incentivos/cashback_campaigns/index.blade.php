@@ -172,12 +172,40 @@
 
                                 <td>
 
-                                    <div class="flex justify-center gap-2">
+                                    <div class="flex flex-wrap justify-center gap-2">
 
                                         <a href="{{ route('cashback-campaigns.edit', $campaign) }}"
-                                            class="rounded bg-yellow-500 px-3 py-2 text-white hover:bg-yellow-600">
+                                            class="rounded-lg bg-yellow-500 px-3 py-2 text-sm font-medium text-white hover:bg-yellow-600">
 
-                                            Editar
+                                            ✏️ Editar
+
+                                        </a>
+
+                                        <a href="{{ route('cashback-campaigns.participants', $campaign) }}"
+                                            class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+
+                                            👥 Participantes
+
+                                        </a>
+
+                                        <a href="{{ route('ranking-rewards.index', $campaign) }}"
+                                            class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
+
+                                            🎁 Premios
+
+                                        </a>
+
+                                        <a href="{{ route('cashback-campaigns.ranking', $campaign) }}"
+                                            class="rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700">
+
+                                            🏆 Ranking
+
+                                        </a>
+
+                                        <a href="{{ route('cashback-campaigns.winners', $campaign) }}"
+                                            class="rounded-lg bg-purple-600 px-3 py-2 text-sm font-medium text-white hover:bg-purple-700">
+
+                                            🥇 Ganadores
 
                                         </a>
 
@@ -187,9 +215,9 @@
                                             @method('DELETE')
 
                                             <button type="submit" onclick="return confirm('¿Eliminar campaña?')"
-                                                class="rounded bg-red-600 px-3 py-2 text-white hover:bg-red-700">
+                                                class="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700">
 
-                                                Eliminar
+                                                🗑 Eliminar
 
                                             </button>
 

@@ -1,250 +1,276 @@
 @csrf
 
-<div class="grid grid-cols-2 gap-6">
+<div class="space-y-8">
 
-    <div>
+    <div class="rounded-xl bg-white shadow">
 
-        <label class="block mb-2 font-semibold">
-            Campaña Cashback <span class="text-red-600">*</span>
-        </label>
+        <div class="border-b border-gray-200 px-6 py-4">
 
-        <select name="cashback_campaign_id" class="w-full rounded-xl border border-gray-300 px-4 py-3" required>
+            <h2 class="text-lg font-semibold text-gray-800">
 
-            <option value="">
-                Seleccione una campaña...
-            </option>
+                Información del premio
 
-            @foreach ($campaigns as $campaign)
-                <option value="{{ $campaign->id }}"
-                    {{ old('cashback_campaign_id', $rankingReward->cashback_campaign_id ?? '') == $campaign->id ? 'selected' : '' }}>
+            </h2>
 
-                    {{ $campaign->nombre }}
+            <p class="mt-1 text-sm text-gray-500">
 
-                </option>
-            @endforeach
-
-        </select>
-
-        @error('cashback_campaign_id')
-            <p class="mt-2 text-sm text-red-600">
-
-                {{ $message }}
+                Configure el premio que recibirá una posición del ranking.
 
             </p>
-        @enderror
+
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 p-6 lg:grid-cols-2">
+
+            <div>
+
+                <label class="mb-2 block font-semibold">
+
+                    Campaña
+
+                    <span class="text-red-600">*</span>
+
+                </label>
+
+                <select name="cashback_campaign_id" class="w-full rounded-xl border border-gray-300 px-4 py-3">
+
+                    <option value="">
+                        Seleccione una campaña
+                    </option>
+
+                    @foreach ($campaigns as $campaign)
+                        <option value="{{ $campaign->id }}" @selected(old('cashback_campaign_id', $rankingReward->cashback_campaign_id ?? request()->route('cashbackCampaign')?->id) == $campaign->id)>
+
+                            {{ $campaign->nombre }}
+
+                        </option>
+                    @endforeach
+
+                </select>
+
+            </div>
+
+            <div>
+
+                <label class="mb-2 block font-semibold">
+
+                    Posición
+
+                    <span class="text-red-600">*</span>
+
+                </label>
+
+                <x-input type="number" min="1" name="posicion"
+                    value="{{ old('posicion', $rankingReward->posicion ?? 1) }}" required />
+
+            </div>
+
+            <div>
+
+                <label class="mb-2 block font-semibold">
+
+                    Tipo de premio
+
+                    <span class="text-red-600">*</span>
+
+                </label>
+
+                <select id="reward_type" name="reward_type_id"
+                    class="w-full rounded-xl border border-gray-300 px-4 py-3">
+
+                    @foreach ($rewardTypes as $type)
+                        <option value="{{ $type->id }}" data-code="{{ $type->codigo }}"
+                            @selected(old('reward_type_id', $rankingReward->reward_type_id ?? '') == $type->id)>
+
+                            {{ $type->nombre }}
+
+                        </option>
+                    @endforeach
+
+                </select>
+
+            </div>
+
+            <div>
+
+                <label class="mb-2 block font-semibold">
+
+                    Estado
+
+                </label>
+
+                <select name="activo" class="w-full rounded-xl border border-gray-300 px-4 py-3">
+
+                    <option value="1" @selected(old('activo', $rankingReward->activo ?? true))>
+
+                        Activo
+
+                    </option>
+
+                    <option value="0" @selected(old('activo', $rankingReward->activo ?? true) == false)>
+
+                        Inactivo
+
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
 
     </div>
 
-    <div>
+    <div class="rounded-xl bg-white shadow">
 
-        <label class="block mb-2 font-semibold">
-            Tipo de premio <span class="text-red-600">*</span>
-        </label>
+        <div class="border-b border-gray-200 px-6 py-4">
 
-        <select id="reward_type_id" name="reward_type_id" class="w-full rounded-xl border border-gray-300 px-4 py-3"
-            required>
+            <h2 class="text-lg font-semibold">
 
-            <option value="">
-                Seleccione un tipo...
-            </option>
+                Premio
 
-            @foreach ($rewardTypes as $type)
-                <option value="{{ $type->id }}" data-code="{{ $type->codigo }}"
-                    {{ old('reward_type_id', $rankingReward->reward_type_id ?? '') == $type->id ? 'selected' : '' }}>
+            </h2>
 
-                    {{ $type->nombre }}
+        </div>
 
-                </option>
-            @endforeach
+        <div class="space-y-6 p-6">
 
-        </select>
+            <div>
 
-        @error('reward_type_id')
-            <p class="mt-2 text-sm text-red-600">
+                <label class="mb-2 block font-semibold">
 
-                {{ $message }}
+                    Título
 
-            </p>
-        @enderror
+                    <span class="text-red-600">*</span>
+
+                </label>
+
+                <x-input type="text" name="titulo" value="{{ old('titulo', $rankingReward->titulo ?? '') }}"
+                    required />
+
+            </div>
+
+            <div>
+
+                <label class="mb-2 block font-semibold">
+
+                    Descripción
+
+                </label>
+
+                <textarea name="descripcion" rows="4" class="w-full rounded-xl border border-gray-300 px-4 py-3">{{ old('descripcion', $rankingReward->descripcion ?? '') }}</textarea>
+
+            </div>
+
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+                <div>
+
+                    <label class="mb-2 block font-semibold">
+
+                        Valor referencial
+
+                    </label>
+
+                    <x-input type="number" step="0.01" min="0" name="valor_referencial"
+                        value="{{ old('valor_referencial', $rankingReward->valor_referencial ?? '') }}" />
+
+                </div>
+
+                <div id="cashback-multiplier-container">
+
+                    <label class="mb-2 block font-semibold">
+
+                        Multiplicador Cashback
+
+                    </label>
+
+                    <select name="multiplicador" class="w-full rounded-xl border border-gray-300 px-4 py-3">
+
+                        <option value="">
+                            No aplica
+                        </option>
+
+                        <option value="2" @selected(old('multiplicador', $rankingReward->multiplicador ?? '') == 2)>
+
+                            2x Cashback
+
+                        </option>
+
+                        <option value="3" @selected(old('multiplicador', $rankingReward->multiplicador ?? '') == 3)>
+
+                            3x Cashback
+
+                        </option>
+
+                        <option value="4" @selected(old('multiplicador', $rankingReward->multiplicador ?? '') == 4)>
+
+                            4x Cashback
+
+                        </option>
+
+                        <option value="5" @selected(old('multiplicador', $rankingReward->multiplicador ?? '') == 5)>
+
+                            5x Cashback
+
+                        </option>
+
+                    </select>
+
+                    <p class="mt-2 text-sm text-gray-500">
+
+                        Solo aplica cuando el premio es Cashback.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
 
     </div>
 
-</div>
+    <div class="flex justify-end gap-4">
 
-<div class="grid grid-cols-2 gap-6 mt-6">
+        <a href="{{ url()->previous() }}" class="rounded-xl border border-gray-300 px-6 py-3 hover:bg-gray-100">
 
-    <div>
+            Cancelar
 
-        <label class="block mb-2 font-semibold">
-            Posición <span class="text-red-600">*</span>
-        </label>
+        </a>
 
-        <x-input type="number" min="1" max="100" name="posicion"
-            value="{{ old('posicion', $rankingReward->posicion ?? '') }}" required />
+        <x-button>
 
-        @error('posicion')
-            <p class="mt-2 text-sm text-red-600">
+            Guardar premio
 
-                {{ $message }}
-
-            </p>
-        @enderror
+        </x-button>
 
     </div>
-
-    <div>
-
-        <label class="block mb-2 font-semibold">
-            Estado
-        </label>
-
-        <select name="activo" class="w-full rounded-xl border border-gray-300 px-4 py-3">
-
-            <option value="1" {{ old('activo', $rankingReward->activo ?? 1) == 1 ? 'selected' : '' }}>
-
-                Activo
-
-            </option>
-
-            <option value="0" {{ old('activo', $rankingReward->activo ?? 1) == 0 ? 'selected' : '' }}>
-
-                Inactivo
-
-            </option>
-
-        </select>
-
-    </div>
-
-</div>
-
-<div class="mt-6">
-
-    <label class="block mb-2 font-semibold">
-        Título <span class="text-red-600">*</span>
-    </label>
-
-    <x-input type="text" name="titulo" value="{{ old('titulo', $rankingReward->titulo ?? '') }}" required />
-
-    @error('titulo')
-        <p class="mt-2 text-sm text-red-600">
-
-            {{ $message }}
-
-        </p>
-    @enderror
-
-</div>
-
-<div class="mt-6">
-
-    <label class="block mb-2 font-semibold">
-        Descripción
-    </label>
-
-    <textarea name="descripcion" rows="4" class="w-full rounded-xl border border-gray-300 px-4 py-3">{{ old('descripcion', $rankingReward->descripcion ?? '') }}</textarea>
-
-    @error('descripcion')
-        <p class="mt-2 text-sm text-red-600">
-
-            {{ $message }}
-
-        </p>
-    @enderror
-
-</div>
-
-<div id="valor_container" class="mt-6">
-
-    <label class="block mb-2 font-semibold">
-        Valor referencial
-    </label>
-
-    <x-input type="number" step="0.01" min="0.01" name="valor_referencial"
-        value="{{ old('valor_referencial', $rankingReward->valor_referencial ?? '') }}" />
-
-    @error('valor_referencial')
-        <p class="mt-2 text-sm text-red-600">
-
-            {{ $message }}
-
-        </p>
-    @enderror
-
-</div>
-
-<div id="multiplicador_container" class="mt-6 hidden">
-
-    <label class="block mb-2 font-semibold">
-        Multiplicador Cashback
-    </label>
-
-    <x-input type="number" step="0.01" min="0.01" max="100" name="multiplicador"
-        value="{{ old('multiplicador', $rankingReward->multiplicador ?? '') }}" />
-
-    @error('multiplicador')
-        <p class="mt-2 text-sm text-red-600">
-
-            {{ $message }}
-
-        </p>
-    @enderror
-
-</div>
-
-<hr class="my-8">
-
-<div class="flex justify-end gap-4">
-
-    <a href="{{ route('ranking-rewards.index') }}"
-        class="rounded-xl border border-gray-300 px-6 py-3 hover:bg-gray-100">
-
-        Cancelar
-
-    </a>
-
-    <x-button>
-
-        Guardar
-
-    </x-button>
 
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
 
-        const rewardType = document.getElementById('reward_type_id');
+        const reward = document.getElementById('reward_type');
 
-        const valor = document.getElementById('valor_container');
+        const container = document.getElementById('cashback-multiplier-container');
 
-        const multiplicador = document.getElementById('multiplicador_container');
+        function refresh() {
 
-        function actualizarFormulario() {
-
-            const option = rewardType.options[rewardType.selectedIndex];
+            const option = reward.options[reward.selectedIndex];
 
             const code = option.dataset.code;
 
-            if (code === 'cashback_multiplier') {
-
-                valor.classList.add('hidden');
-
-                multiplicador.classList.remove('hidden');
-
-            } else {
-
-                multiplicador.classList.add('hidden');
-
-                valor.classList.remove('hidden');
-
-            }
+            container.style.display = (code === 'cashback') ?
+                'block' :
+                'none';
 
         }
 
-        rewardType.addEventListener('change', actualizarFormulario);
+        reward.addEventListener('change', refresh);
 
-        actualizarFormulario();
+        refresh();
 
     });
 </script>

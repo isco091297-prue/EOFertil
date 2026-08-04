@@ -1,18 +1,28 @@
 @extends('layouts.app')
 
-@section('title', 'Nuevo Premio de Ranking')
+@section('title', 'Nuevo Premio')
 
 @section('content')
 
     <x-card>
 
-        <h1 class="mb-6 text-3xl font-bold">
+        <div class="mb-8">
 
-            Nuevo Premio de Ranking
+            <h1 class="text-3xl font-bold">
 
-        </h1>
+                Nuevo Premio
 
-        <form action="{{ route('ranking-rewards.store') }}" method="POST">
+            </h1>
+
+            <p class="mt-2 text-gray-500">
+
+                Cree un premio para una posición del ranking.
+
+            </p>
+
+        </div>
+
+        <form method="POST" action="{{ route('ranking-rewards.store', $cashbackCampaign) }}">
 
             @include('admin.incentivos.ranking_rewards._form')
 

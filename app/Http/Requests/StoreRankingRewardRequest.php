@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Models\RankingReward;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreRankingRewardRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Autorizar.
      */
     public function authorize(): bool
     {
@@ -16,16 +17,11 @@ class StoreRankingRewardRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Reglas.
      */
     public function rules(): array
     {
         return [
-
-            'cashback_campaign_id' => [
-                'required',
-                'exists:cashback_campaigns,id',
-            ],
 
             'reward_type_id' => [
                 'required',
@@ -37,13 +33,38 @@ class StoreRankingRewardRequest extends FormRequest
                 'integer',
                 'min:1',
                 'max:100',
-                Rule::unique('ranking_rewards')
-                    ->where(function ($query) {
-                        return $query->where(
+
+                function (
+                    string $attribute,
+                    mixed $value,
+                    Closure $fail
+                ) {
+
+                    $campaign = $this->route(
+                        'cashbackCampaign'
+                    );
+
+                    $exists = RankingReward::query()
+
+                        ->where(
                             'cashback_campaign_id',
-                            $this->cashback_campaign_id
+                            $campaign->id
+                        )
+
+                        ->where(
+                            'posicion',
+                            $value
+                        )
+
+                        ->exists();
+
+                    if ($exists) {
+
+                        $fail(
+                            'Ya existe un premio para esa posición en esta campaña.'
                         );
-                    }),
+                    }
+                },
             ],
 
             'titulo' => [
@@ -60,14 +81,13 @@ class StoreRankingRewardRequest extends FormRequest
             'valor_referencial' => [
                 'nullable',
                 'numeric',
-                'gt:0',
+                'min:0',
             ],
 
             'multiplicador' => [
                 'nullable',
                 'numeric',
-                'gt:0',
-                'max:100',
+                'min:1',
             ],
 
             'activo' => [
@@ -78,37 +98,37 @@ class StoreRankingRewardRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator)
+    /**
+     * Mensajes.
+     */
+    public function messages(): array
     {
-        $validator->after(function ($validator) {
+        return [
 
-            $rewardType = \App\Models\RewardType::find(
-                $this->reward_type_id
-            );
+            'reward_type_id.required' =>
+            'Seleccione el tipo de premio.',
 
-            if (!$rewardType) {
-                return;
-            }
+            'reward_type_id.exists' =>
+            'El tipo de premio seleccionado no existe.',
 
-            if ($rewardType->codigo === 'cashback_multiplier') {
+            'posicion.required' =>
+            'Ingrese la posición del ranking.',
 
-                if (empty($this->multiplicador)) {
+            'posicion.integer' =>
+            'La posición debe ser numérica.',
 
-                    $validator->errors()->add(
-                        'multiplicador',
-                        'El multiplicador es obligatorio.'
-                    );
-                }
-            } else {
+            'titulo.required' =>
+            'Ingrese el título del premio.',
 
-                if (empty($this->valor_referencial)) {
+            'valor_referencial.numeric' =>
+            'El valor referencial debe ser numérico.',
 
-                    $validator->errors()->add(
-                        'valor_referencial',
-                        'El valor referencial es obligatorio.'
-                    );
-                }
-            }
-        });
+            'multiplicador.numeric' =>
+            'El multiplicador debe ser numérico.',
+
+            'activo.required' =>
+            'Seleccione el estado.',
+
+        ];
     }
 }

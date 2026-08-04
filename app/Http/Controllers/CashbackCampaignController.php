@@ -4,13 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCashbackCampaignRequest;
 use App\Http\Requests\UpdateCashbackCampaignRequest;
+
+use App\Models\Branch;
 use App\Models\CashbackCampaign;
+use App\Models\Warehouse;
+use App\Models\Zone;
+
+use App\Services\Cashback\CashbackCampaignService;
+
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CashbackCampaignController extends Controller
 {
+    public function __construct(
+        private readonly CashbackCampaignService $service
+    ) {}
+
     /**
      * Mostrar listado.
      */
@@ -28,7 +39,10 @@ class CashbackCampaignController extends Controller
 
         return view(
             'admin.incentivos.cashback_campaigns.index',
-            compact('campaigns', 'search')
+            compact(
+                'campaigns',
+                'search'
+            )
         );
     }
 
@@ -38,7 +52,12 @@ class CashbackCampaignController extends Controller
     public function create(): View
     {
         return view(
-            'admin.incentivos.cashback_campaigns.create'
+            'admin.incentivos.cashback_campaigns.create',
+            [
+                'warehouses' => Warehouse::orderBy('name')->get(),
+                'zones' => Zone::orderBy('name')->get(),
+                'branches' => Branch::orderBy('name')->get(),
+            ]
         );
     }
 
@@ -48,11 +67,17 @@ class CashbackCampaignController extends Controller
     public function store(
         StoreCashbackCampaignRequest $request
     ): RedirectResponse {
-        CashbackCampaign::create($request->validated());
+
+        $this->service->store(
+            $request->validated()
+        );
 
         return redirect()
             ->route('cashback-campaigns.index')
-            ->with('success', 'Campaña creada correctamente.');
+            ->with(
+                'success',
+                'Campaña creada correctamente.'
+            );
     }
 
     /**
@@ -61,9 +86,17 @@ class CashbackCampaignController extends Controller
     public function edit(
         CashbackCampaign $cashbackCampaign
     ): View {
+
+        $cashbackCampaign->load('scopes');
+
         return view(
             'admin.incentivos.cashback_campaigns.edit',
-            compact('cashbackCampaign')
+            [
+                'cashbackCampaign' => $cashbackCampaign,
+                'warehouses' => Warehouse::orderBy('name')->get(),
+                'zones' => Zone::orderBy('name')->get(),
+                'branches' => Branch::orderBy('name')->get(),
+            ]
         );
     }
 
@@ -74,11 +107,18 @@ class CashbackCampaignController extends Controller
         UpdateCashbackCampaignRequest $request,
         CashbackCampaign $cashbackCampaign
     ): RedirectResponse {
-        $cashbackCampaign->update($request->validated());
+
+        $this->service->update(
+            $cashbackCampaign,
+            $request->validated()
+        );
 
         return redirect()
             ->route('cashback-campaigns.index')
-            ->with('success', 'Campaña actualizada correctamente.');
+            ->with(
+                'success',
+                'Campaña actualizada correctamente.'
+            );
     }
 
     /**
@@ -87,10 +127,16 @@ class CashbackCampaignController extends Controller
     public function destroy(
         CashbackCampaign $cashbackCampaign
     ): RedirectResponse {
-        $cashbackCampaign->delete();
+
+        $this->service->delete(
+            $cashbackCampaign
+        );
 
         return redirect()
             ->route('cashback-campaigns.index')
-            ->with('success', 'Campaña eliminada correctamente.');
+            ->with(
+                'success',
+                'Campaña eliminada correctamente.'
+            );
     }
 }

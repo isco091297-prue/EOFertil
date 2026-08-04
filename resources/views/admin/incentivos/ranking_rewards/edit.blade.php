@@ -1,20 +1,32 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Premio de Ranking')
+@section('title', 'Editar Premio')
 
 @section('content')
 
     <x-card>
 
-        <h1 class="mb-6 text-3xl font-bold">
+        <div class="mb-8">
 
-            Editar Premio de Ranking
+            <h1 class="text-3xl font-bold">
 
-        </h1>
+                Editar Premio
 
-        <form action="{{ route('ranking-rewards.update', $rankingReward) }}" method="POST">
+            </h1>
+
+            <p class="mt-2 text-gray-500">
+
+                Modifique la configuración del premio.
+
+            </p>
+
+        </div>
+
+        <form method="POST"
+            action="{{ route('ranking-rewards.update', [$cashbackCampaign, $rankingReward]) }}">
 
             @csrf
+
             @method('PUT')
 
             @include('admin.incentivos.ranking_rewards._form')

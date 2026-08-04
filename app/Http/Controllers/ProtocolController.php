@@ -222,7 +222,6 @@ class ProtocolController extends Controller
                 }
             )
             ->orderBy('name')
-            ->limit(20)
             ->get([
                 'id',
                 'name',
@@ -266,7 +265,6 @@ class ProtocolController extends Controller
                 }
             )
             ->orderBy('name')
-            ->limit(20)
             ->get([
                 'id',
                 'name',
@@ -320,7 +318,7 @@ class ProtocolController extends Controller
                 }
             )
             ->orderBy('name')
-            ->limit(20)
+
             ->get([
                 'id',
                 'code',
@@ -363,7 +361,7 @@ class ProtocolController extends Controller
                 }
             )
             ->orderBy('name')
-            ->limit(20)
+            
             ->get([
                 'id',
                 'name',

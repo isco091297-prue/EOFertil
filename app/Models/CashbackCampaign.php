@@ -11,18 +11,30 @@ class CashbackCampaign extends Model
     protected $table = 'cashback_campaigns';
 
     protected $fillable = [
+
         'nombre',
+
         'descripcion',
+
+        'campaign_type',
+
         'porcentaje',
+
         'valor_alerta_factura',
+
         'fecha_inicio',
+
         'fecha_fin',
+
         'activo',
     ];
 
     protected $casts = [
+
         'activo' => 'boolean',
+
         'fecha_inicio' => 'date',
+
         'fecha_fin' => 'date',
     ];
 
@@ -45,6 +57,32 @@ class CashbackCampaign extends Model
             ->whereDate('fecha_fin', '>=', now());
     }
 
+    public function scopeCashback(Builder $query): Builder
+    {
+        return $query->where(
+            'campaign_type',
+            'cashback'
+        );
+    }
+
+    public function scopeRankingCashback(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'campaign_type',
+            'ranking_cashback'
+        );
+    }
+
+    public function scopeRankingAccumulated(
+        Builder $query
+    ): Builder {
+        return $query->where(
+            'campaign_type',
+            'ranking_accumulated'
+        );
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Accessors
@@ -61,11 +99,33 @@ class CashbackCampaign extends Model
             return 'proxima';
         }
 
-        if (now()->isAfter($this->fecha_fin->copy()->endOfDay())) {
+        if (
+            now()->isAfter(
+                $this->fecha_fin->copy()->endOfDay()
+            )
+        ) {
             return 'finalizada';
         }
 
         return 'vigente';
+    }
+
+    public function getCampaignTypeLabelAttribute(): string
+    {
+        return match ($this->campaign_type) {
+
+            'cashback' =>
+            'Cashback',
+
+            'ranking_cashback' =>
+            'Ranking Cashback',
+
+            'ranking_accumulated' =>
+            'Ranking Acumulado',
+
+            default =>
+            'Sin definir',
+        };
     }
 
     /*
@@ -76,14 +136,29 @@ class CashbackCampaign extends Model
 
     public function rankingRewards(): HasMany
     {
-        return $this->hasMany(RankingReward::class);
+        return $this->hasMany(
+            RankingReward::class
+        );
     }
+
     public function invoices(): HasMany
     {
-        return $this->hasMany(Invoice::class);
+        return $this->hasMany(
+            Invoice::class
+        );
     }
+
     public function cashbackTransactions(): HasMany
     {
-        return $this->hasMany(CashbackTransaction::class);
+        return $this->hasMany(
+            CashbackTransaction::class
+        );
+    }
+
+    public function scopes(): HasMany
+    {
+        return $this->hasMany(
+            CashbackCampaignScope::class
+        );
     }
 }

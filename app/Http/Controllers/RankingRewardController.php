@@ -7,134 +7,140 @@ use App\Http\Requests\UpdateRankingRewardRequest;
 use App\Models\CashbackCampaign;
 use App\Models\RankingReward;
 use App\Models\RewardType;
+use App\Services\Ranking\RankingRewardService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class RankingRewardController extends Controller
 {
-    /**
-     * Mostrar listado.
-     */
-    public function index(Request $request)
-    {
-        $search = trim($request->get('search'));
+    public function __construct(
+        private readonly RankingRewardService $service
+    ) {}
 
-        $rankingRewards = RankingReward::with([
-            'campaign',
-            'rewardType',
-        ])
-            ->when($search, function ($query) use ($search) {
+    public function index(
+        Request $request,
+        CashbackCampaign $cashbackCampaign
+    ): View {
 
-                $query->where('titulo', 'like', "%{$search}%")
-                    ->orWhereHas('campaign', function ($q) use ($search) {
+        $search = trim(
+            $request->get('search')
+        );
 
-                        $q->where('nombre', 'like', "%{$search}%");
-                    });
-            })
-            ->orderBy('cashback_campaign_id')
-            ->orderBy('posicion')
-            ->paginate(15)
-            ->withQueryString();
+        $rankingRewards = $this->service->list(
+            $cashbackCampaign,
+            $search
+        );
 
         return view(
             'admin.incentivos.ranking_rewards.index',
             compact(
+                'cashbackCampaign',
                 'rankingRewards',
                 'search'
             )
         );
     }
 
-    /**
-     * Formulario crear.
-     */
-    public function create()
-    {
-        $campaigns = CashbackCampaign::activas()
-            ->orderBy('nombre')
-            ->get();
+    public function create(
+        CashbackCampaign $cashbackCampaign
+    ): View {
 
-        $rewardTypes = RewardType::where('activo', true)
+        $rewardTypes = RewardType::where(
+            'activo',
+            true
+        )
             ->orderBy('nombre')
             ->get();
 
         return view(
             'admin.incentivos.ranking_rewards.create',
             compact(
-                'campaigns',
+                'cashbackCampaign',
                 'rewardTypes'
             )
         );
     }
 
-    /**
-     * Guardar.
-     */
-    public function store(StoreRankingRewardRequest $request)
-    {
-        RankingReward::create(
+    public function store(
+        StoreRankingRewardRequest $request,
+        CashbackCampaign $cashbackCampaign
+    ): RedirectResponse {
+
+        $this->service->store(
+            $cashbackCampaign,
             $request->validated()
         );
 
         return redirect()
-            ->route('ranking-rewards.index')
+            ->route(
+                'ranking-rewards.index',
+                $cashbackCampaign
+            )
             ->with(
                 'success',
                 'Premio creado correctamente.'
             );
     }
 
-    /**
-     * Formulario editar.
-     */
-    public function edit(RankingReward $rankingReward)
-    {
-        $campaigns = CashbackCampaign::activas()
-            ->orderBy('nombre')
-            ->get();
+    public function edit(
+        CashbackCampaign $cashbackCampaign,
+        RankingReward $rankingReward
+    ): View {
 
-        $rewardTypes = RewardType::where('activo', true)
+        $rewardTypes = RewardType::where(
+            'activo',
+            true
+        )
             ->orderBy('nombre')
             ->get();
 
         return view(
             'admin.incentivos.ranking_rewards.edit',
             compact(
+                'cashbackCampaign',
                 'rankingReward',
-                'campaigns',
                 'rewardTypes'
             )
         );
     }
 
-    /**
-     * Actualizar.
-     */
     public function update(
         UpdateRankingRewardRequest $request,
+        CashbackCampaign $cashbackCampaign,
         RankingReward $rankingReward
-    ) {
-        $rankingReward->update(
+    ): RedirectResponse {
+
+        $this->service->update(
+            $rankingReward,
             $request->validated()
         );
 
         return redirect()
-            ->route('ranking-rewards.index')
+            ->route(
+                'ranking-rewards.index',
+                $cashbackCampaign
+            )
             ->with(
                 'success',
                 'Premio actualizado correctamente.'
             );
     }
 
-    /**
-     * Eliminar.
-     */
     public function destroy(
+        CashbackCampaign $cashbackCampaign,
         RankingReward $rankingReward
-    ) {
-        $rankingReward->delete();
+    ): RedirectResponse {
+
+        $this->service->delete(
+            $rankingReward
+        );
 
         return redirect()
-            ->route('ranking-rewards.index')
+            ->route(
+                'ranking-rewards.index',
+                $cashbackCampaign
+            )
             ->with(
                 'success',
                 'Premio eliminado correctamente.'

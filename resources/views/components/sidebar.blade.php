@@ -44,8 +44,7 @@
 
         <x-menu-item route="cashback-campaigns.index" icon="💵" label="Campañas Cashback" />
 
-        <x-menu-item route="ranking-rewards.index" icon="🏆" label="Premios Ranking" />
-
+        <x-menu-item route="cashback-campaigns.index" icon="🎁" label="Campañas Cashback" />
         <div class="pt-6 pb-2 text-xs uppercase tracking-widest text-green-300 font-bold">
             Comercial
         </div>
