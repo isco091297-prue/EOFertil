@@ -68,6 +68,8 @@ class ProtocolGuideResource extends JsonResource
 
                                     'nombre' => $item->product?->name,
 
+                                    'descripcion' => $item->product?->description,
+
                                     'marca' => $item->product?->brand?->name,
 
                                     'categoria' => $item->product?->category?->name,
@@ -120,6 +122,8 @@ class ProtocolGuideResource extends JsonResource
                                             'codigo' => $item->product?->code,
 
                                             'nombre' => $item->product?->name,
+
+                                            'descripcion' => $item->product?->description,
 
                                             'marca' => $item->product?->brand?->name,
 
