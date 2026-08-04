@@ -1,42 +1,15 @@
 @csrf
 
-<div class="grid grid-cols-2 gap-6">
+<div>
 
-    <div>
-        <label class="block mb-2 font-semibold">
-            Almacén
-        </label>
+    <label class="block mb-2 font-semibold">
+        Código
+    </label>
 
-        <select
-            name="warehouse_id"
-            class="w-full rounded-xl border border-gray-300 px-4 py-3">
-
-            @foreach($warehouses as $warehouse)
-
-                <option
-                    value="{{ $warehouse->id }}"
-                    @selected(old('warehouse_id', $zone->warehouse_id ?? '') == $warehouse->id)>
-
-                    {{ $warehouse->name }}
-
-                </option>
-
-            @endforeach
-
-        </select>
-
-    </div>
-
-    <div>
-        <label class="block mb-2 font-semibold">
-            Código
-        </label>
-
-        <x-input
-            name="code"
-            value="{{ old('code', $zone->code ?? '') }}"
-            required />
-    </div>
+    <x-input
+        name="code"
+        value="{{ old('code', $zone->code ?? '') }}"
+        required />
 
 </div>
 
@@ -76,13 +49,15 @@
         name="is_active"
         class="w-full rounded-xl border border-gray-300 px-4 py-3">
 
-        <option value="1" @selected(old('is_active',$zone->is_active ?? 1))>
+        <option value="1"
+            @selected(old('is_active', $zone->is_active ?? 1))>
 
             Activo
 
         </option>
 
-        <option value="0" @selected(old('is_active',$zone->is_active ?? 1)==0)>
+        <option value="0"
+            @selected(old('is_active', $zone->is_active ?? 1) == 0)>
 
             Inactivo
 

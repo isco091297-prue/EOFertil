@@ -10,7 +10,6 @@ class Zone extends Model
     use HasFactory;
 
     protected $fillable = [
-        'warehouse_id',
         'code',
         'name',
         'description',
@@ -21,12 +20,7 @@ class Zone extends Model
         'is_active' => 'boolean',
     ];
 
-    public function warehouse()
-    {
-        return $this->belongsTo(Warehouse::class);
-    }
-
-    public function branches()
+     public function branches()
     {
         return $this->hasMany(Branch::class);
     }

@@ -1,41 +1,39 @@
 @extends('layouts.app')
 
 @section('content')
+    <x-card>
 
-<x-card>
+        <h1 class="text-3xl font-bold">
 
-    <h1 class="text-3xl font-bold">
+            {{ $zone->name }}
 
-        {{ $zone->name }}
+        </h1>
 
-    </h1>
+        <hr class="my-6">
 
-    <hr class="my-6">
+        <p>
 
-    <p>
+            <strong>Código:</strong>
 
-        <strong>Almacén:</strong>
+            {{ $zone->code }}
 
-        {{ $zone->warehouse->name }}
+        </p>
 
-    </p>
+        <p class="mt-4">
 
-    <p class="mt-4">
+            <strong>Descripción:</strong>
 
-        <strong>Código:</strong>
+            {{ $zone->description }}
 
-        {{ $zone->code }}
+        </p>
 
-    </p>
+        <p class="mt-4">
 
-    <p class="mt-4">
+            <strong>Estado:</strong>
 
-        <strong>Descripción:</strong>
+            {{ $zone->is_active ? 'Activo' : 'Inactivo' }}
 
-        {{ $zone->description }}
+        </p>
 
-    </p>
-
-</x-card>
-
+    </x-card>
 @endsection

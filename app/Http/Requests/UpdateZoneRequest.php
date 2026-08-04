@@ -15,8 +15,6 @@ class UpdateZoneRequest extends FormRequest
     {
         return [
 
-            'warehouse_id' => 'required|exists:warehouses,id',
-
             'code' => 'required|string|max:20',
 
             'name' => 'required|string|max:100',

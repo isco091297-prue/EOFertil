@@ -13,13 +13,11 @@ class ZoneController extends Controller
     {
         $search = request('search');
 
-        $zones = Zone::with('warehouse')
-
+        $zones = Zone::query()
             ->when($search, function ($query) use ($search) {
 
                 $query->where('code', 'like', "%{$search}%")
                     ->orWhere('name', 'like', "%{$search}%");
-
             })
 
             ->orderBy('name')
@@ -31,9 +29,7 @@ class ZoneController extends Controller
 
     public function create()
     {
-        $warehouses = Warehouse::orderBy('name')->get();
-
-        return view('zones.create', compact('warehouses'));
+        return view('zones.create');
     }
 
     public function store(StoreZoneRequest $request)
@@ -52,9 +48,7 @@ class ZoneController extends Controller
 
     public function edit(Zone $zone)
     {
-        $warehouses = Warehouse::orderBy('name')->get();
-
-        return view('zones.edit', compact('zone', 'warehouses'));
+        return view('zones.edit', compact('zone'));
     }
 
     public function update(UpdateZoneRequest $request, Zone $zone)

@@ -1,152 +1,131 @@
 @extends('layouts.app')
 
 @section('content')
+    @if (session('success'))
+        <div class="mb-6 rounded-xl bg-green-100 border border-green-300 text-green-700 p-4">
+            {{ session('success') }}
+        </div>
+    @endif
 
-@if(session('success'))
-    <div class="mb-6 rounded-xl bg-green-100 border border-green-300 text-green-700 p-4">
-        {{ session('success') }}
-    </div>
-@endif
+    <x-card>
 
-<x-card>
+        <div class="flex justify-between items-center mb-6">
 
-    <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold">Zonas</h1>
+                <p class="text-gray-500">Administración de zonas.</p>
+            </div>
 
-        <div>
-            <h1 class="text-3xl font-bold">Zonas</h1>
-            <p class="text-gray-500">Administración de zonas.</p>
+            <a href="{{ route('zones.create') }}" class="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl">
+
+                Nueva Zona
+
+            </a>
+
         </div>
 
-        <a
-            href="{{ route('zones.create') }}"
-            class="bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-xl">
+        <form method="GET" class="mb-6">
 
-            Nueva Zona
+            <x-input type="text" name="search" placeholder="Buscar..." value="{{ request('search') }}" />
 
-        </a>
+        </form>
 
-    </div>
+        <table class="w-full">
 
-    <form method="GET" class="mb-6">
+            <thead>
 
-        <x-input
-            type="text"
-            name="search"
-            placeholder="Buscar..."
-            value="{{ request('search') }}" />
+                <tr class="border-b">
 
-    </form>
+                    <th class="text-left py-3">Código</th>
 
-    <table class="w-full">
+                    <th class="text-left">Nombre</th>
 
-        <thead>
 
-            <tr class="border-b">
+                    <th class="text-left">Estado</th>
 
-                <th class="text-left py-3">Código</th>
+                    <th class="text-center">Acciones</th>
 
-                <th class="text-left">Nombre</th>
+                </tr>
 
-                <th class="text-left">Almacén</th>
+            </thead>
 
-                <th class="text-left">Estado</th>
+            <tbody>
 
-                <th class="text-center">Acciones</th>
+                @forelse($zones as $zone)
+                    <tr class="border-b">
 
-            </tr>
+                        <td class="py-4">
+                            {{ $zone->code }}
+                        </td>
 
-        </thead>
+                        <td>
+                            {{ $zone->name }}
+                        </td>
 
-        <tbody>
+                        <td>
+                            {{ $zone->is_active ? 'Activo' : 'Inactivo' }}
+                        </td>
 
-        @forelse($zones as $zone)
+                        <td>
 
-            <tr class="border-b">
+                            <div class="flex justify-center items-center gap-2">
 
-                <td class="py-4">
-                    {{ $zone->code }}
-                </td>
+                                <a href="{{ route('zones.show', $zone) }}"
+                                    class="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
 
-                <td>
-                    {{ $zone->name }}
-                </td>
+                                    Ver
 
-                <td>
-                    {{ $zone->warehouse->name }}
-                </td>
+                                </a>
 
-                <td>
-                    {{ $zone->is_active ? 'Activo' : 'Inactivo' }}
-                </td>
+                                <a href="{{ route('zones.edit', $zone) }}"
+                                    class="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg">
 
-                <td>
+                                    Editar
 
-                    <div class="flex justify-center items-center gap-2">
+                                </a>
 
-                        <a
-                            href="{{ route('zones.show', $zone) }}"
-                            class="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                                <form action="{{ route('zones.destroy', $zone) }}" method="POST"
+                                    onsubmit="return confirm('¿Eliminar esta zona?')">
 
-                            Ver
+                                    @csrf
+                                    @method('DELETE')
 
-                        </a>
+                                    <button type="submit"
+                                        class="inline-flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">
 
-                        <a
-                            href="{{ route('zones.edit', $zone) }}"
-                            class="inline-flex items-center px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg">
+                                        Eliminar
 
-                            Editar
+                                    </button>
 
-                        </a>
+                                </form>
 
-                        <form
-                            action="{{ route('zones.destroy', $zone) }}"
-                            method="POST"
-                            onsubmit="return confirm('¿Eliminar esta zona?')">
+                            </div>
 
-                            @csrf
-                            @method('DELETE')
+                        </td>
 
-                            <button
-                                type="submit"
-                                class="inline-flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">
+                    </tr>
 
-                                Eliminar
+                @empty
 
-                            </button>
+                    <tr>
 
-                        </form>
+                        <td colspan="4" class="text-center py-10">
+                            No existen registros.
 
-                    </div>
+                        </td>
 
-                </td>
+                    </tr>
+                @endforelse
 
-            </tr>
+            </tbody>
 
-        @empty
+        </table>
 
-            <tr>
+        <div class="mt-6">
 
-                <td colspan="5" class="text-center py-10">
+            {{ $zones->links() }}
 
-                    No existen registros.
+        </div>
 
-                </td>
-
-            </tr>
-
-        @endforelse
-
-        </tbody>
-
-    </table>
-
-    <div class="mt-6">
-
-        {{ $zones->links() }}
-
-    </div>
-
-</x-card>
-
+    </x-card>
 @endsection
