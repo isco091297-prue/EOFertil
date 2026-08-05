@@ -31,18 +31,18 @@ class CashbackCampaignParticipantService
                 ->get(),
 
             'selectedWarehouses' => $campaign->scopes()
-                ->where('scope_type', 'warehouse')
-                ->pluck('scope_id')
+                ->whereNotNull('warehouse_id')
+                ->pluck('warehouse_id')
                 ->toArray(),
 
             'selectedZones' => $campaign->scopes()
-                ->where('scope_type', 'zone')
-                ->pluck('scope_id')
+                ->whereNotNull('zone_id')
+                ->pluck('zone_id')
                 ->toArray(),
 
             'selectedBranches' => $campaign->scopes()
-                ->where('scope_type', 'branch')
-                ->pluck('scope_id')
+                ->whereNotNull('branch_id')
+                ->pluck('branch_id')
                 ->toArray(),
 
         ];
@@ -58,38 +58,48 @@ class CashbackCampaignParticipantService
 
         $campaign->scopes()->delete();
 
-        if (
-            ($data['participant_type'] ?? 'all')
-            === 'all'
-        ) {
+        $participantType = $data['participant_type'] ?? 'all';
+
+        if ($participantType === 'all') {
             return;
         }
 
-        $this->sync(
-            $campaign,
-            'warehouse',
-            $data['warehouse_ids'] ?? []
-        );
+        switch ($participantType) {
 
-        $this->sync(
-            $campaign,
-            'zone',
-            $data['zone_ids'] ?? []
-        );
+            case 'warehouse':
 
-        $this->sync(
-            $campaign,
-            'branch',
-            $data['branch_ids'] ?? []
-        );
+                $this->syncWarehouses(
+                    $campaign,
+                    $data['warehouse_ids'] ?? []
+                );
+
+                break;
+
+            case 'zone':
+
+                $this->syncZones(
+                    $campaign,
+                    $data['zone_ids'] ?? []
+                );
+
+                break;
+
+            case 'branch':
+
+                $this->syncBranches(
+                    $campaign,
+                    $data['branch_ids'] ?? []
+                );
+
+                break;
+        }
     }
 
     /**
-     * Sincronizar participantes.
+     * Guardar almacenes.
      */
-    private function sync(
+    private function syncWarehouses(
         CashbackCampaign $campaign,
-        string $scopeType,
         array $ids
     ): void {
 
@@ -97,9 +107,47 @@ class CashbackCampaignParticipantService
 
             $campaign->scopes()->create([
 
-                'scope_type' => $scopeType,
+                'warehouse_id' => $id,
 
-                'scope_id' => $id,
+                'required' => true,
+
+            ]);
+        }
+    }
+
+    /**
+     * Guardar zonas.
+     */
+    private function syncZones(
+        CashbackCampaign $campaign,
+        array $ids
+    ): void {
+
+        foreach ($ids as $id) {
+
+            $campaign->scopes()->create([
+
+                'zone_id' => $id,
+
+                'required' => true,
+
+            ]);
+        }
+    }
+
+    /**
+     * Guardar sucursales.
+     */
+    private function syncBranches(
+        CashbackCampaign $campaign,
+        array $ids
+    ): void {
+
+        foreach ($ids as $id) {
+
+            $campaign->scopes()->create([
+
+                'branch_id' => $id,
 
                 'required' => true,
 

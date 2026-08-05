@@ -11,14 +11,12 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\InvoiceItem;
 use App\Services\Cashback\CashbackService;
-use App\Services\Ranking\RankingCalculatorService;
 use Exception;
 
 class InvoiceService
 {
     public function __construct(
-        protected CashbackService $cashbackService,
-        protected RankingCalculatorService $rankingCalculatorService
+        protected CashbackService $cashbackService
     ) {}
 
     /**
@@ -45,12 +43,8 @@ class InvoiceService
                 $totales
             );
 
-            $invoice->refresh();
-
-            $this->cashbackService->generate($invoice);
-
-            $this->rankingCalculatorService->process(
-                $invoice->fresh()
+            $this->cashbackService->generate(
+                $invoice
             );
 
             $updatedInvoice = $invoice->fresh([
@@ -58,7 +52,6 @@ class InvoiceService
                 'branch:id,name',
                 'items.product:id,name',
             ]);
-
             $firstInvoiceBonus = CashbackTransaction::where(
                 'user_id',
                 $invoice->user_id

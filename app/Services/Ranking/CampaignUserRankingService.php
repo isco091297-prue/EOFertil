@@ -4,68 +4,18 @@ namespace App\Services\Ranking;
 
 use App\Models\CampaignUserRanking;
 use App\Models\CashbackCampaign;
-use App\Models\Invoice;
 use Illuminate\Database\Eloquent\Collection;
 
 class CampaignUserRankingService
 {
     /**
-     * Actualiza el acumulado de un usuario
-     * dentro de una campaña.
-     */
-    public function updateFromInvoice(
-        CashbackCampaign $campaign,
-        Invoice $invoice,
-        float $salesTotal,
-        float $cashbackTotal
-    ): CampaignUserRanking {
-
-        $invoice->loadMissing([
-            'user',
-        ]);
-
-        $ranking = CampaignUserRanking::firstOrNew([
-
-            'cashback_campaign_id' => $campaign->id,
-
-            'user_id' => $invoice->user_id,
-
-        ]);
-
-        if (! $ranking->exists) {
-
-            $ranking->warehouse_id = $invoice->user->warehouse_id;
-
-            $ranking->zone_id = $invoice->user->zone_id;
-
-            $ranking->branch_id = $invoice->branch_id;
-
-            $ranking->sales_total = 0;
-
-            $ranking->cashback_total = 0;
-
-            $ranking->invoice_count = 0;
-        }
-
-        $ranking->sales_total += $salesTotal;
-
-        $ranking->cashback_total += $cashbackTotal;
-
-        $ranking->invoice_count++;
-
-        $ranking->save();
-
-        return $ranking;
-    }
-
-    /**
-     * Ranking general.
+     * Obtener ranking completo.
      */
     public function getRanking(
         CashbackCampaign $campaign
     ): Collection {
 
-        return CampaignUserRanking::query()
+        $query = CampaignUserRanking::query()
 
             ->with([
                 'user',
@@ -77,11 +27,28 @@ class CampaignUserRankingService
             ->where(
                 'cashback_campaign_id',
                 $campaign->id
-            )
+            );
 
-            ->orderByDesc('cashback_total')
+        if (
+            $campaign->campaign_type ===
+            'ranking_accumulated'
+        ) {
 
-            ->orderByDesc('sales_total')
+            $query
+
+                ->orderByDesc('sales_total')
+
+                ->orderByDesc('cashback_total');
+        } else {
+
+            $query
+
+                ->orderByDesc('cashback_total')
+
+                ->orderByDesc('sales_total');
+        }
+
+        return $query
 
             ->orderBy('invoice_count')
 
@@ -96,25 +63,14 @@ class CampaignUserRankingService
         int $warehouseId
     ): Collection {
 
-        return CampaignUserRanking::query()
-
-            ->with('user')
-
-            ->where(
-                'cashback_campaign_id',
-                $campaign->id
-            )
+        return $this->getRanking($campaign)
 
             ->where(
                 'warehouse_id',
                 $warehouseId
             )
 
-            ->orderByDesc('cashback_total')
-
-            ->orderByDesc('sales_total')
-
-            ->get();
+            ->values();
     }
 
     /**
@@ -125,25 +81,14 @@ class CampaignUserRankingService
         int $zoneId
     ): Collection {
 
-        return CampaignUserRanking::query()
-
-            ->with('user')
-
-            ->where(
-                'cashback_campaign_id',
-                $campaign->id
-            )
+        return $this->getRanking($campaign)
 
             ->where(
                 'zone_id',
                 $zoneId
             )
 
-            ->orderByDesc('cashback_total')
-
-            ->orderByDesc('sales_total')
-
-            ->get();
+            ->values();
     }
 
     /**
@@ -154,29 +99,18 @@ class CampaignUserRankingService
         int $branchId
     ): Collection {
 
-        return CampaignUserRanking::query()
-
-            ->with('user')
-
-            ->where(
-                'cashback_campaign_id',
-                $campaign->id
-            )
+        return $this->getRanking($campaign)
 
             ->where(
                 'branch_id',
                 $branchId
             )
 
-            ->orderByDesc('cashback_total')
-
-            ->orderByDesc('sales_total')
-
-            ->get();
+            ->values();
     }
 
     /**
-     * Participante.
+     * Buscar participante.
      */
     public function find(
         CashbackCampaign $campaign,
@@ -199,26 +133,15 @@ class CampaignUserRankingService
     }
 
     /**
-     * Ganador.
+     * Obtener ganador.
      */
     public function getWinner(
         CashbackCampaign $campaign
     ): ?CampaignUserRanking {
 
-        return CampaignUserRanking::query()
-
-            ->with('user')
-
-            ->where(
-                'cashback_campaign_id',
-                $campaign->id
-            )
-
-            ->orderByDesc('cashback_total')
-
-            ->orderByDesc('sales_total')
-
-            ->first();
+        return $this->getRanking(
+            $campaign
+        )->first();
     }
 
     /**

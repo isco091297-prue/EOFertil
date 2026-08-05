@@ -13,16 +13,23 @@ class RankingCalculatorService
 
     /**
      * Procesa una factura y actualiza
-     * los rankings correspondientes.
+     * los rankings de las campañas
+     * en las que participa.
      */
     public function process(
         Invoice $invoice
     ): void {
 
         $invoice->loadMissing([
-            'cashbackCampaign',
             'user',
+            'branch',
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Buscar campañas vigentes
+        |--------------------------------------------------------------------------
+        */
 
         $campaigns = CashbackCampaign::query()
 
@@ -40,6 +47,14 @@ class RankingCalculatorService
                 $invoice->fecha_factura
             )
 
+            ->whereIn(
+                'campaign_type',
+                [
+                    'cashback',
+                    'ranking_accumulated',
+                ]
+            )
+
             ->get();
 
         foreach ($campaigns as $campaign) {
@@ -51,41 +66,65 @@ class RankingCalculatorService
                 continue;
             }
 
-            switch ($campaign->campaign_type) {
+            /*
+            |--------------------------------------------------------------------------
+            | Ranking Cashback
+            |--------------------------------------------------------------------------
+            */
 
-                case 'cashback':
+            if ($campaign->campaign_type === 'cashback') {
 
-                    $this->processCashbackCampaign(
+                if (! $campaign->ranking_enabled) {
+                    continue;
+                }
+
+                $this->campaignUserRankingService
+                    ->updateFromInvoice(
+
                         $campaign,
-                        $invoice
+
+                        $invoice,
+
+                        (float) $invoice->total_productos_participantes,
+
+                        (float) $invoice->cashback_generado
+
                     );
 
-                    break;
+                continue;
+            }
 
-                case 'ranking_cashback':
+            /*
+            |--------------------------------------------------------------------------
+            | Ranking Acumulado
+            |--------------------------------------------------------------------------
+            */
 
-                    $this->processRankingCashbackCampaign(
+            if (
+                $campaign->campaign_type ===
+                'ranking_accumulated'
+            ) {
+
+                $this->campaignUserRankingService
+                    ->updateFromInvoice(
+
                         $campaign,
-                        $invoice
+
+                        $invoice,
+
+                        (float) $invoice->total_productos_participantes,
+
+                        0
+
                     );
-
-                    break;
-
-                case 'ranking_accumulated':
-
-                    $this->processRankingAccumulatedCampaign(
-                        $campaign,
-                        $invoice
-                    );
-
-                    break;
             }
         }
     }
 
     /**
      * Verifica si la factura
-     * participa en la campaña.
+     * pertenece al alcance
+     * de la campaña.
      */
     protected function campaignApplies(
         CashbackCampaign $campaign,
@@ -99,110 +138,46 @@ class RankingCalculatorService
             return true;
         }
 
-        return match ($campaign->participant_type) {
+        $scopeQuery = $campaign->scopes();
 
-            'warehouse'
-            => $campaign->scopes()
+        switch ($campaign->participant_type) {
 
-                ->where(
-                    'scope_type',
-                    'warehouse'
-                )
+            case 'warehouse':
 
-                ->where(
-                    'scope_id',
-                    $invoice->user->warehouse_id
-                )
+                return $scopeQuery
 
-                ->exists(),
+                    ->where(
+                        'warehouse_id',
+                        $invoice->user->warehouse_id
+                    )
 
-            'zone'
-            => $campaign->scopes()
+                    ->exists();
 
-                ->where(
-                    'scope_type',
-                    'zone'
-                )
+            case 'zone':
 
-                ->where(
-                    'scope_id',
-                    $invoice->user->zone_id
-                )
+                return $scopeQuery
 
-                ->exists(),
+                    ->where(
+                        'zone_id',
+                        $invoice->user->zone_id
+                    )
 
-            'branch'
-            => $campaign->scopes()
+                    ->exists();
 
-                ->where(
-                    'scope_type',
-                    'branch'
-                )
+            case 'branch':
 
-                ->where(
-                    'scope_id',
-                    $invoice->branch_id
-                )
+                return $scopeQuery
 
-                ->exists(),
+                    ->where(
+                        'branch_id',
+                        $invoice->branch_id
+                    )
 
-            default => false,
-        };
-    }
+                    ->exists();
 
-    /**
-     * Cashback normal.
-     */
-    protected function processCashbackCampaign(
-        CashbackCampaign $campaign,
-        Invoice $invoice
-    ): void {
+            default:
 
-        // Las campañas normales no generan ranking.
-
-    }
-
-    /**
-     * Ranking por cashback.
-     */
-    protected function processRankingCashbackCampaign(
-        CashbackCampaign $campaign,
-        Invoice $invoice
-    ): void {
-
-        $this->campaignUserRankingService
-            ->updateFromInvoice(
-
-                $campaign,
-
-                $invoice,
-
-                (float) $invoice->total_productos_participantes,
-
-                (float) $invoice->cashback_generado
-
-            );
-    }
-
-    /**
-     * Ranking por compras acumuladas.
-     */
-    protected function processRankingAccumulatedCampaign(
-        CashbackCampaign $campaign,
-        Invoice $invoice
-    ): void {
-
-        $this->campaignUserRankingService
-            ->updateFromInvoice(
-
-                $campaign,
-
-                $invoice,
-
-                (float) $invoice->total_productos_participantes,
-
-                0
-
-            );
+                return false;
+        }
     }
 }

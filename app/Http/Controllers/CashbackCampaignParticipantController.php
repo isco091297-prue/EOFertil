@@ -44,14 +44,40 @@ class CashbackCampaignParticipantController extends Controller
 
         $data = $request->validate([
 
-            'warehouse_ids' => ['nullable', 'array'],
-            'warehouse_ids.*' => ['integer', 'exists:warehouses,id'],
+            'participant_type' => [
+                'required',
+                'in:all,warehouse,zone,branch',
+            ],
 
-            'zone_ids' => ['nullable', 'array'],
-            'zone_ids.*' => ['integer', 'exists:zones,id'],
+            'warehouse_ids' => [
+                'nullable',
+                'array',
+            ],
 
-            'branch_ids' => ['nullable', 'array'],
-            'branch_ids.*' => ['integer', 'exists:branches,id'],
+            'warehouse_ids.*' => [
+                'integer',
+                'exists:warehouses,id',
+            ],
+
+            'zone_ids' => [
+                'nullable',
+                'array',
+            ],
+
+            'zone_ids.*' => [
+                'integer',
+                'exists:zones,id',
+            ],
+
+            'branch_ids' => [
+                'nullable',
+                'array',
+            ],
+
+            'branch_ids.*' => [
+                'integer',
+                'exists:branches,id',
+            ],
 
         ]);
 

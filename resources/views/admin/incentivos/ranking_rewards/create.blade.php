@@ -16,13 +16,16 @@
 
             <p class="mt-2 text-gray-500">
 
-                Cree un premio para una posición del ranking.
+                Campaña:
+                <strong>{{ $cashbackCampaign->nombre }}</strong>
 
             </p>
 
         </div>
 
-        <form method="POST" action="{{ route('ranking-rewards.store', $cashbackCampaign) }}">
+        <form method="POST" action="{{ route('cashback-campaigns.ranking-rewards.store', $cashbackCampaign) }}">
+
+            @csrf
 
             @include('admin.incentivos.ranking_rewards._form')
 

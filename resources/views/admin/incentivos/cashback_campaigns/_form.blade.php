@@ -2,20 +2,20 @@
 
 <div class="space-y-8">
 
-    {{-- ====================================================== --}}
-    {{-- INFORMACIÓN GENERAL --}}
-    {{-- ====================================================== --}}
-
     <div class="rounded-xl bg-white shadow">
 
         <div class="border-b border-gray-200 px-6 py-4">
 
             <h2 class="text-lg font-semibold text-gray-800">
+
                 Información General
+
             </h2>
 
             <p class="mt-1 text-sm text-gray-500">
-                Configure la campaña de incentivos.
+
+                Cree una campaña de Cashback o un Ranking Acumulado.
+
             </p>
 
         </div>
@@ -25,8 +25,11 @@
             <div>
 
                 <label class="mb-2 block font-semibold">
+
                     Nombre
+
                     <span class="text-red-600">*</span>
+
                 </label>
 
                 <x-input type="text" name="nombre" value="{{ old('nombre', $cashbackCampaign->nombre ?? '') }}"
@@ -37,8 +40,11 @@
             <div>
 
                 <label class="mb-2 block font-semibold">
+
                     Tipo de campaña
+
                     <span class="text-red-600">*</span>
+
                 </label>
 
                 <select id="campaign_type" name="campaign_type"
@@ -50,12 +56,6 @@
 
                     </option>
 
-                    <option value="ranking_cashback" @selected(old('campaign_type', $cashbackCampaign->campaign_type ?? '') == 'ranking_cashback')>
-
-                        Ranking Cashback
-
-                    </option>
-
                     <option value="ranking_accumulated" @selected(old('campaign_type', $cashbackCampaign->campaign_type ?? '') == 'ranking_accumulated')>
 
                         Ranking Acumulado
@@ -63,6 +63,12 @@
                     </option>
 
                 </select>
+
+                <p class="mt-2 text-sm text-gray-500">
+
+                    El Ranking Cashback se configurará dentro de una campaña Cashback.
+
+                </p>
 
             </div>
 
@@ -82,21 +88,19 @@
 
     </div>
 
-    {{-- ====================================================== --}}
-    {{-- PARTICIPANTES --}}
-    {{-- ====================================================== --}}
-
     <div class="rounded-xl bg-white shadow">
 
         <div class="border-b border-gray-200 px-6 py-4">
 
             <h2 class="text-lg font-semibold">
+
                 Participantes
+
             </h2>
 
             <p class="mt-1 text-sm text-gray-500">
 
-                Seleccione quiénes participarán en esta campaña.
+                Seleccione quiénes participarán en la campaña.
 
             </p>
 
@@ -143,26 +147,26 @@
                 </label>
 
             </div>
-            {{-- ====================================================== --}}
-            {{-- ALMACENES --}}
-            {{-- ====================================================== --}}
 
             <div id="warehouse-section" class="mt-8 hidden">
 
-                <h3 class="mb-4 text-base font-semibold text-gray-800">
+                <h3 class="mb-4 text-base font-semibold">
+
                     Almacenes participantes
+
                 </h3>
 
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
 
                     @foreach ($warehouses as $warehouse)
-                        <label class="flex items-center gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50">
+                        <label class="flex items-center gap-3 rounded-lg border p-3 hover:bg-gray-50">
 
-                            <input type="checkbox" name="warehouse_ids[]" value="{{ $warehouse->id }}"
-                                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <input type="checkbox" name="warehouse_ids[]" value="{{ $warehouse->id }}">
 
                             <span>
+
                                 {{ $warehouse->name }}
+
                             </span>
 
                         </label>
@@ -172,23 +176,20 @@
 
             </div>
 
-            {{-- ====================================================== --}}
-            {{-- ZONAS --}}
-            {{-- ====================================================== --}}
-
             <div id="zone-section" class="mt-8 hidden">
 
-                <h3 class="mb-4 text-base font-semibold text-gray-800">
+                <h3 class="mb-4 text-base font-semibold">
+
                     Zonas participantes
+
                 </h3>
 
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
 
                     @foreach ($zones as $zone)
-                        <label class="flex items-center gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50">
+                        <label class="flex items-center gap-3 rounded-lg border p-3 hover:bg-gray-50">
 
-                            <input type="checkbox" name="zone_ids[]" value="{{ $zone->id }}"
-                                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <input type="checkbox" name="zone_ids[]" value="{{ $zone->id }}">
 
                             <span>
 
@@ -203,23 +204,20 @@
 
             </div>
 
-            {{-- ====================================================== --}}
-            {{-- SUCURSALES --}}
-            {{-- ====================================================== --}}
-
             <div id="branch-section" class="mt-8 hidden">
 
-                <h3 class="mb-4 text-base font-semibold text-gray-800">
+                <h3 class="mb-4 text-base font-semibold">
+
                     Sucursales participantes
+
                 </h3>
 
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
 
                     @foreach ($branches as $branch)
-                        <label class="flex items-center gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50">
+                        <label class="flex items-center gap-3 rounded-lg border p-3 hover:bg-gray-50">
 
-                            <input type="checkbox" name="branch_ids[]" value="{{ $branch->id }}"
-                                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <input type="checkbox" name="branch_ids[]" value="{{ $branch->id }}">
 
                             <span>
 
@@ -237,31 +235,34 @@
         </div>
 
     </div>
-    {{-- ====================================================== --}}
-    {{-- CONFIGURACIÓN DE LA CAMPAÑA --}}
-    {{-- ====================================================== --}}
 
     <div class="rounded-xl bg-white shadow">
 
         <div class="border-b border-gray-200 px-6 py-4">
 
-            <h2 class="text-lg font-semibold text-gray-800">
+            <h2 class="text-lg font-semibold">
+
                 Configuración
+
             </h2>
 
             <p class="mt-1 text-sm text-gray-500">
-                Los campos cambian automáticamente según el tipo de campaña.
+
+                Configure el cashback y, opcionalmente, el Ranking Cashback.
+
             </p>
 
         </div>
 
-        <div class="space-y-6 p-6">
+        <div class="space-y-8 p-6">
 
-            {{-- =============================================== --}}
-            {{-- CASHBACK --}}
-            {{-- =============================================== --}}
+            <div id="cashback-config">
 
-            <div id="cashback-config" class="space-y-6">
+                <h3 class="mb-6 text-lg font-semibold text-green-700">
+
+                    Cashback
+
+                </h3>
 
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 
@@ -282,7 +283,7 @@
 
                         <label class="mb-2 block font-semibold">
 
-                            Valor mínimo factura
+                            Valor mínimo para revisión
 
                         </label>
 
@@ -295,62 +296,137 @@
 
             </div>
 
-            {{-- =============================================== --}}
-            {{-- RANKING CASHBACK --}}
-            {{-- =============================================== --}}
+            <hr>
 
             <div id="ranking-cashback-config" class="hidden">
 
-                <label class="mb-2 block font-semibold">
+                <div class="flex items-center gap-3">
 
-                    Multiplicador para el ganador
+                    <input id="enable-ranking" type="checkbox" name="ranking_enabled" value="1"
+                        class="h-5 w-5 rounded border-gray-300 text-green-600" @checked(old('ranking_enabled', $cashbackCampaign->ranking_enabled ?? false))>
+                    <label for="enable-ranking" class="font-semibold text-lg">
 
-                </label>
+                        Activar Ranking Cashback
 
-                <select name="multiplicador" class="w-full rounded-xl border border-gray-300 px-4 py-3">
+                    </label>
 
-                    <option value="2">
-                        2x Cashback
-                    </option>
+                </div>
 
-                    <option value="3">
-                        3x Cashback
-                    </option>
+                <p class="mt-2 text-sm text-gray-500">
 
-                    <option value="4">
-                        4x Cashback
-                    </option>
-
-                    <option value="5">
-                        5x Cashback
-                    </option>
-
-                </select>
-
-                <p class="mt-3 text-sm text-gray-500">
-
-                    El primer lugar de cada almacén participante recibirá este
-                    multiplicador sobre el cashback generado durante la campaña.
+                    Al finalizar la campaña se escogerá automáticamente
+                    el primer lugar de cada almacén, zona o sucursal
+                    participante.
 
                 </p>
 
+                <div id="ranking-options"
+                    class="mt-8 {{ old('ranking_enabled', $cashbackCampaign->ranking_enabled ?? false) ? '' : 'hidden' }} space-y-6">
+                    <div>
+
+                        <label class="mb-2 block font-semibold">
+
+                            Tipo de Ranking
+
+                        </label>
+
+                        <select name="ranking_type" class="w-full rounded-xl border border-gray-300 px-4 py-3">
+
+                            <option value="cashback" @selected(old('ranking_type', $cashbackCampaign->ranking_type ?? 'cashback') == 'cashback')>
+
+                                Mayor Cashback generado
+
+                            </option>
+
+                            <option value="sales" @selected(old('ranking_type', $cashbackCampaign->ranking_type ?? '') == 'sales')>
+
+                                Mayor valor vendido
+
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <div>
+
+                        <label class="mb-2 block font-semibold">
+
+                            Multiplicador del ganador
+
+                        </label>
+
+                        <select name="multiplicador" class="w-full rounded-xl border border-gray-300 px-4 py-3">
+
+                            @for ($i = 2; $i <= 5; $i++)
+                                <option value="{{ $i }}" @selected(old('multiplicador', $rankingReward->multiplicador ?? 2) == $i)>
+
+                                    {{ $i }}x Cashback
+
+                                </option>
+                            @endfor
+
+                        </select>
+
+                    </div>
+
+                    <div>
+
+                        <label class="mb-2 block font-semibold">
+
+                            Nombre del premio
+
+                        </label>
+
+                        <x-input type="text" name="reward_title"
+                            value="{{ old('reward_title', $rankingReward->titulo ?? '') }}"
+                            placeholder="Ej: Primer Lugar" />
+                    </div>
+
+                    <div>
+
+                        <label class="mb-2 block font-semibold">
+
+                            Descripción
+
+                        </label>
+
+                        <textarea rows="4" name="reward_description" class="w-full rounded-xl border border-gray-300 px-4 py-3">{{ old('reward_description', $rankingReward->descripcion ?? '') }}</textarea>
+                    </div>
+
+                    <div>
+
+                        <label class="mb-2 block font-semibold">
+
+                            Valor referencial
+
+                        </label>
+
+                        <x-input type="number" step="0.01" min="0" name="reward_value"
+                            value="{{ old('reward_value', $rankingReward->valor_referencial ?? '') }}" />
+                    </div>
+
+                </div>
+
             </div>
 
-            {{-- =============================================== --}}
-            {{-- RANKING ACUMULADO --}}
-            {{-- =============================================== --}}
+            <hr>
 
-            <div id="ranking-accumulated-config" class="hidden space-y-6">
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 
                 <div>
 
                     <label class="mb-2 block font-semibold">
 
-                        Premio
+                        Fecha inicio
+
+                        <span class="text-red-600">*</span>
 
                     </label>
 
-                    <x-input type="text" name="reward_title" placeholder="Ej: iPhone 17" />
+                    <x-input type="date" name="fecha_inicio"
+                        value="{{ old('fecha_inicio', isset($cashbackCampaign) ? optional($cashbackCampaign->fecha_inicio)->format('Y-m-d') : '') }}"
+                        required />
 
                 </div>
 
@@ -358,28 +434,182 @@
 
                     <label class="mb-2 block font-semibold">
 
-                        Valor referencial
+                        Fecha fin
+
+                        <span class="text-red-600">*</span>
 
                     </label>
 
-                    <x-input type="number" step="0.01" min="0" name="reward_value" />
+                    <x-input type="date" name="fecha_fin"
+                        value="{{ old('fecha_fin', isset($cashbackCampaign) ? optional($cashbackCampaign->fecha_fin)->format('Y-m-d') : '') }}"
+                        required />
 
                 </div>
 
-                <div>
+            </div>
 
-                    <label class="mb-2 block font-semibold">
+            <div>
 
-                        Descripción del premio
+                <label class="mb-2 block font-semibold">
 
-                    </label>
+                    Estado
 
-                    <textarea name="reward_description" rows="4" class="w-full rounded-xl border border-gray-300 px-4 py-3"></textarea>
+                </label>
 
-                </div>
+                <select name="activo" class="w-full rounded-xl border border-gray-300 px-4 py-3">
+
+                    <option value="1" @selected(old('activo', $cashbackCampaign->activo ?? true))>
+
+                        Activa
+
+                    </option>
+
+                    <option value="0" @selected(old('activo', $cashbackCampaign->activo ?? true) == false)>
+
+                        Inactiva
+
+                    </option>
+
+                </select>
 
             </div>
 
         </div>
 
     </div>
+
+    <div class="flex justify-end gap-4">
+
+        <a href="{{ route('cashback-campaigns.index') }}"
+            class="rounded-xl border border-gray-300 px-6 py-3 hover:bg-gray-100">
+
+            Cancelar
+
+        </a>
+
+        <button type="submit" class="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700">
+
+            {{ isset($cashbackCampaign) ? 'Actualizar campaña' : 'Guardar campaña' }}
+
+        </button>
+
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const participantTypes =
+            document.querySelectorAll('.participant-type');
+
+        const warehouseSection =
+            document.getElementById('warehouse-section');
+
+        const zoneSection =
+            document.getElementById('zone-section');
+
+        const branchSection =
+            document.getElementById('branch-section');
+
+        const campaignType =
+            document.getElementById('campaign_type');
+
+        const cashbackConfig =
+            document.getElementById('cashback-config');
+
+        const rankingCashback =
+            document.getElementById('ranking-cashback-config');
+
+        const enableRanking =
+            document.getElementById('enable-ranking');
+
+        const rankingOptions =
+            document.getElementById('ranking-options');
+
+        function refreshParticipants() {
+
+            warehouseSection.classList.add('hidden');
+            zoneSection.classList.add('hidden');
+            branchSection.classList.add('hidden');
+
+            const selected =
+                document.querySelector('.participant-type:checked');
+
+            if (!selected) {
+                return;
+            }
+
+            switch (selected.value) {
+
+                case 'warehouse':
+                    warehouseSection.classList.remove('hidden');
+                    break;
+
+                case 'zone':
+                    zoneSection.classList.remove('hidden');
+                    break;
+
+                case 'branch':
+                    branchSection.classList.remove('hidden');
+                    break;
+
+            }
+
+        }
+
+        function refreshCampaign() {
+
+            if (campaignType.value === 'cashback') {
+
+                cashbackConfig.classList.remove('hidden');
+                rankingCashback.classList.remove('hidden');
+
+            } else {
+
+                cashbackConfig.classList.add('hidden');
+                rankingCashback.classList.add('hidden');
+
+            }
+
+        }
+
+        function refreshRanking() {
+
+            if (enableRanking.checked) {
+
+                rankingOptions.classList.remove('hidden');
+
+            } else {
+
+                rankingOptions.classList.add('hidden');
+
+            }
+
+        }
+
+        participantTypes.forEach(item => {
+
+            item.addEventListener(
+                'change',
+                refreshParticipants
+            );
+
+        });
+
+        campaignType.addEventListener(
+            'change',
+            refreshCampaign
+        );
+
+        enableRanking.addEventListener(
+            'change',
+            refreshRanking
+        );
+
+        refreshParticipants();
+        refreshCampaign();
+        refreshRanking();
+
+    });
+</script>

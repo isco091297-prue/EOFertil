@@ -2,40 +2,51 @@
 
 namespace App\Services\Cashback;
 
+use App\Models\CashbackCampaign;
 use App\Models\CashbackTransaction;
+use App\Models\CampaignUserRanking;
 use App\Models\Invoice;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Exception;
+
 
 class CashbackService
 {
     /**
-     * Bono entregado al usuario por registrar
-     * su primera factura.
+     * Bono por primera factura.
      */
     private const FIRST_INVOICE_BONUS = 5.00;
 
     /**
-     * Genera el cashback de una factura.
+     * Generar cashback de una factura.
      *
      * @throws Exception
      */
-    public function generate(Invoice $invoice): CashbackTransaction
-    {
+    public function generate(
+        Invoice $invoice
+    ): CashbackTransaction {
+
         return DB::transaction(function () use ($invoice) {
 
             /*
             |--------------------------------------------------------------------------
-            | Cargar relaciones
+            | Relaciones
             |--------------------------------------------------------------------------
             */
 
             $invoice->loadMissing([
+
                 'user',
+
                 'cashbackCampaign',
+
+                'branch',
+
             ]);
 
             $user = $invoice->user;
+
             $campaign = $invoice->cashbackCampaign;
 
             /*
@@ -44,115 +55,67 @@ class CashbackService
             |--------------------------------------------------------------------------
             */
 
-            if (!$user) {
-                throw new Exception(
-                    'La factura no tiene un usuario asociado.'
-                );
-            }
-
-            if (!$campaign) {
-                throw new Exception(
-                    'La factura no tiene una campaña de cashback asociada.'
-                );
-            }
-
-            if ($invoice->estado === 'anulada') {
-                throw new Exception(
-                    'La factura está anulada.'
-                );
-            }
-
-            if ($invoice->cashback_generado > 0) {
-                throw new Exception(
-                    'La factura ya generó cashback.'
-                );
-            }
-
-            if ($invoice->total_productos_participantes <= 0) {
-                throw new Exception(
-                    'La factura no tiene productos participantes para generar cashback.'
-                );
-            }
+            $this->validateInvoice(
+                $invoice,
+                $campaign,
+                $user
+            );
 
             /*
             |--------------------------------------------------------------------------
-            | Calcular cashback de la factura
+            | Calcular Cashback
             |--------------------------------------------------------------------------
             */
 
             $cashback = round(
-                ($invoice->total_productos_participantes * $campaign->porcentaje) / 100,
-                2
-            );
 
-            if ($cashback <= 0) {
-                throw new Exception(
-                    'El cashback calculado es inválido.'
-                );
-            }
+                (
+
+                    $invoice->total_productos_participantes
+
+                    *
+
+                    $campaign->porcentaje
+
+                ) / 100,
+
+                2
+
+            );
 
             /*
             |--------------------------------------------------------------------------
-            | Verificar bono de primera factura
+            | Bono primera factura
             |--------------------------------------------------------------------------
-            |
-            | El bono se identifica mediante una transacción independiente
-            | de tipo "bonificacion".
-            |
-            | De esta manera el usuario solamente puede recibirlo una vez.
-            |
             */
 
-            $alreadyReceivedFirstInvoiceBonus = CashbackTransaction::where(
-                'user_id',
-                $user->id
-            )
-                ->where(
-                    'tipo',
-                    'bonificacion'
-                )
-                ->where(
-                    'descripcion',
-                    'Bono por registrar tu primera factura'
-                )
-                ->exists();
+            $firstInvoiceBonus =
 
-            $firstInvoiceBonus = $alreadyReceivedFirstInvoiceBonus
-                ? 0
-                : self::FIRST_INVOICE_BONUS;
+                $this->calculateFirstInvoiceBonus(
+                    $user
+                );
 
             /*
             |--------------------------------------------------------------------------
             | Actualizar factura
             |--------------------------------------------------------------------------
-            |
-            | IMPORTANTE:
-            | cashback_generado contiene solamente el cashback producido
-            | por la factura.
-            |
-            | El bono de $5 es un movimiento independiente.
-            |
             */
 
             $invoice->update([
-                'porcentaje_cashback' => $campaign->porcentaje,
-                'cashback_generado' => $cashback,
-                'estado' => 'confirmada',
+
+                'porcentaje_cashback' =>
+
+                $campaign->porcentaje,
+
+                'cashback_generado' =>
+
+                $cashback,
+
+                'estado' =>
+
+                'confirmada',
+
             ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Calcular nuevos saldos
-            |--------------------------------------------------------------------------
-            */
-
-            $nuevoTotal = ($user->cashback_total ?? 0)
-                + $cashback
-                + $firstInvoiceBonus;
-
-            $nuevoDisponible = ($user->cashback_available ?? 0)
-                + $cashback
-                + $firstInvoiceBonus;
 
             /*
             |--------------------------------------------------------------------------
@@ -160,59 +123,309 @@ class CashbackService
             |--------------------------------------------------------------------------
             */
 
-            $user->update([
-                'cashback_total' => $nuevoTotal,
-                'cashback_available' => $nuevoDisponible,
-            ]);
+            $this->updateUserBalances(
+
+                $user,
+
+                $cashback,
+
+                $firstInvoiceBonus
+
+            );
 
             /*
             |--------------------------------------------------------------------------
-            | Registrar movimiento del cashback de la factura
+            | Registrar movimientos
             |--------------------------------------------------------------------------
             */
 
-            $saldoDespuesFactura = ($user->cashback_available ?? 0)
-                - $firstInvoiceBonus;
+            $transaction =
 
-            $cashbackTransaction = CashbackTransaction::create([
-                'user_id' => $user->id,
-                'invoice_id' => $invoice->id,
-                'cashback_campaign_id' => $campaign->id,
-                'tipo' => 'factura',
-                'movimiento' => 'ingreso',
-                'valor' => $cashback,
-                'saldo_despues' => $saldoDespuesFactura,
-                'descripcion' => 'Cashback generado por la factura '
-                    . $invoice->numero_factura_original,
-            ]);
+                $this->createCashbackTransaction(
+
+                    $user,
+
+                    $invoice,
+
+                    $campaign,
+
+                    $cashback,
+
+                    $firstInvoiceBonus
+
+                );
 
             /*
             |--------------------------------------------------------------------------
-            | Registrar bono por primera factura
+            | Actualizar Ranking
             |--------------------------------------------------------------------------
             */
 
-            if ($firstInvoiceBonus > 0) {
+            $this->updateRanking(
 
-                CashbackTransaction::create([
-                    'user_id' => $user->id,
-                    'invoice_id' => $invoice->id,
-                    'cashback_campaign_id' => $campaign->id,
-                    'tipo' => 'bonificacion',
-                    'movimiento' => 'ingreso',
-                    'valor' => $firstInvoiceBonus,
-                    'saldo_despues' => $nuevoDisponible,
-                    'descripcion' => 'Bono por registrar tu primera factura',
-                ]);
-            }
+                $campaign,
 
-            /*
-            |--------------------------------------------------------------------------
-            | Retornar transacción principal
-            |--------------------------------------------------------------------------
-            */
+                $invoice,
 
-            return $cashbackTransaction;
+                $cashback
+
+            );
+
+            return $transaction;
         });
+    }
+    /**
+     * Validaciones.
+     */
+    private function validateInvoice(
+        Invoice $invoice,
+        ?CashbackCampaign $campaign,
+        ?User $user
+    ): void {
+
+        if (! $user) {
+            throw new Exception(
+                'La factura no tiene usuario.'
+            );
+        }
+
+        if (! $campaign) {
+            throw new Exception(
+                'La factura no pertenece a una campaña.'
+            );
+        }
+
+        if ($invoice->estado === 'anulada') {
+            throw new Exception(
+                'La factura está anulada.'
+            );
+        }
+
+        if ($invoice->cashback_generado > 0) {
+            throw new Exception(
+                'La factura ya generó cashback.'
+            );
+        }
+
+        if ($invoice->total_productos_participantes <= 0) {
+            throw new Exception(
+                'No existen productos participantes.'
+            );
+        }
+    }
+
+    /**
+     * Bono primera factura.
+     */
+    private function calculateFirstInvoiceBonus(
+        User $user
+    ): float {
+
+        $exists = CashbackTransaction::query()
+
+            ->where(
+                'user_id',
+                $user->id
+            )
+
+            ->where(
+                'tipo',
+                'bonificacion'
+            )
+
+            ->exists();
+
+        return $exists
+            ? 0
+            : self::FIRST_INVOICE_BONUS;
+    }
+
+    /**
+     * Actualizar saldos.
+     */
+    private function updateUserBalances(
+        User $user,
+        float $cashback,
+        float $bonus
+    ): void {
+
+        $user->increment(
+
+            'cashback_total',
+
+            $cashback + $bonus
+
+        );
+
+        $user->increment(
+
+            'cashback_available',
+
+            $cashback + $bonus
+
+        );
+
+        $user->refresh();
+    }
+
+    /**
+     * Registrar movimientos.
+     */
+    private function createCashbackTransaction(
+
+        User $user,
+
+        Invoice $invoice,
+
+        CashbackCampaign $campaign,
+
+        float $cashback,
+
+        float $bonus
+
+    ): CashbackTransaction {
+
+        $transaction = CashbackTransaction::create([
+
+            'user_id' =>
+
+            $user->id,
+
+            'invoice_id' =>
+
+            $invoice->id,
+
+            'cashback_campaign_id' =>
+
+            $campaign->id,
+
+            'tipo' =>
+
+            'factura',
+
+            'movimiento' =>
+
+            'ingreso',
+
+            'valor' =>
+
+            $cashback,
+
+            'saldo_despues' =>
+
+            $user->cashback_available - $bonus,
+
+            'descripcion' =>
+
+            'Cashback generado por la factura '
+                . $invoice->numero_factura_original,
+
+        ]);
+
+        if ($bonus > 0) {
+
+            CashbackTransaction::create([
+
+                'user_id' =>
+
+                $user->id,
+
+                'invoice_id' =>
+
+                $invoice->id,
+
+                'cashback_campaign_id' =>
+
+                $campaign->id,
+
+                'tipo' =>
+
+                'bonificacion',
+
+                'movimiento' =>
+
+                'ingreso',
+
+                'valor' =>
+
+                $bonus,
+
+                'saldo_despues' =>
+
+                $user->cashback_available,
+
+                'descripcion' =>
+
+                'Bono por registrar tu primera factura',
+
+            ]);
+        }
+
+        return $transaction;
+    }
+
+    /**
+     * Actualizar ranking.
+     */
+    private function updateRanking(
+
+        CashbackCampaign $campaign,
+
+        Invoice $invoice,
+
+        float $cashback
+
+    ): void {
+
+        if (
+
+            ! $campaign->ranking_enabled
+
+        ) {
+
+            return;
+        }
+
+        $ranking = CampaignUserRanking::firstOrNew([
+
+            'cashback_campaign_id' =>
+
+            $campaign->id,
+
+            'user_id' =>
+
+            $invoice->user_id,
+
+        ]);
+
+        if (! $ranking->exists) {
+
+            $ranking->warehouse_id =
+                $invoice->user->warehouse_id;
+
+            $ranking->zone_id =
+                $invoice->user->zone_id;
+
+            $ranking->branch_id =
+                $invoice->branch_id;
+
+            $ranking->sales_total = 0;
+
+            $ranking->cashback_total = 0;
+
+            $ranking->invoice_count = 0;
+        }
+
+        $ranking->sales_total +=
+            $invoice->total_productos_participantes;
+
+        $ranking->cashback_total +=
+            $cashback;
+
+        $ranking->invoice_count++;
+
+        $ranking->position = null;
+
+        $ranking->save();
     }
 }

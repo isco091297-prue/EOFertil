@@ -5,13 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class CashbackCampaignScope extends Model
+class CashbackCampaignWinner extends Model
 {
-    protected $table = 'cashback_campaign_scopes';
+    protected $table = 'cashback_campaign_winners';
 
     protected $fillable = [
 
         'cashback_campaign_id',
+
+        'user_id',
 
         'warehouse_id',
 
@@ -19,7 +21,37 @@ class CashbackCampaignScope extends Model
 
         'branch_id',
 
-        'required',
+        'ranking_position',
+
+        'sales_total',
+
+        'cashback_total',
+
+        'reward_type_id',
+
+        'ranking_reward_id',
+
+        'reward_title',
+
+        'reward_value',
+
+        'reward_multiplier',
+
+        'processed_at',
+
+    ];
+
+    protected $casts = [
+
+        'sales_total' => 'decimal:2',
+
+        'cashback_total' => 'decimal:2',
+
+        'reward_value' => 'decimal:2',
+
+        'reward_multiplier' => 'decimal:2',
+
+        'processed_at' => 'datetime',
 
     ];
 
@@ -34,6 +66,13 @@ class CashbackCampaignScope extends Model
         return $this->belongsTo(
             CashbackCampaign::class,
             'cashback_campaign_id'
+        );
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(
+            User::class
         );
     }
 
@@ -55,6 +94,20 @@ class CashbackCampaignScope extends Model
     {
         return $this->belongsTo(
             Branch::class
+        );
+    }
+
+    public function rewardType(): BelongsTo
+    {
+        return $this->belongsTo(
+            RewardType::class
+        );
+    }
+
+    public function rankingReward(): BelongsTo
+    {
+        return $this->belongsTo(
+            RankingReward::class
         );
     }
 }

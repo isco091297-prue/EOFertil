@@ -16,14 +16,15 @@
 
             <p class="mt-2 text-gray-500">
 
-                Modifique la configuración del premio.
+                Campaña:
+                <strong>{{ $cashbackCampaign->nombre }}</strong>
 
             </p>
 
         </div>
 
         <form method="POST"
-            action="{{ route('ranking-rewards.update', [$cashbackCampaign, $rankingReward]) }}">
+            action="{{ route('cashback-campaigns.ranking-rewards.update', [$cashbackCampaign, $rankingReward]) }}">
 
             @csrf
 

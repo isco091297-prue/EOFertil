@@ -83,18 +83,33 @@ class CashbackCampaignController extends Controller
     /**
      * Formulario editar.
      */
+    /**
+     * Formulario editar.
+     */
     public function edit(
         CashbackCampaign $cashbackCampaign
     ): View {
 
-        $cashbackCampaign->load('scopes');
+        $cashbackCampaign->load([
+            'scopes',
+            'rankingRewards',
+        ]);
+
+        $rankingReward = $cashbackCampaign
+            ->rankingRewards
+            ->first();
 
         return view(
             'admin.incentivos.cashback_campaigns.edit',
             [
                 'cashbackCampaign' => $cashbackCampaign,
+
+                'rankingReward' => $rankingReward,
+
                 'warehouses' => Warehouse::orderBy('name')->get(),
+
                 'zones' => Zone::orderBy('name')->get(),
+
                 'branches' => Branch::orderBy('name')->get(),
             ]
         );

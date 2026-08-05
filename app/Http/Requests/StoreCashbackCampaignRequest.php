@@ -36,12 +36,12 @@ class StoreCashbackCampaignRequest extends FormRequest
 
             'campaign_type' => [
                 'required',
-                'in:cashback,ranking_cashback,ranking_accumulated',
+                'in:cashback,ranking_accumulated',
             ],
 
             /*
             |--------------------------------------------------------------------------
-            | Configuración de la campaña
+            | Cashback
             |--------------------------------------------------------------------------
             */
 
@@ -59,17 +59,72 @@ class StoreCashbackCampaignRequest extends FormRequest
                 'min:0',
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Ranking Cashback
+            |--------------------------------------------------------------------------
+            */
+
+            'ranking_enabled' => [
+                'nullable',
+                'boolean',
+            ],
+
+            'ranking_type' => [
+                'required_if:ranking_enabled,1',
+                'nullable',
+                'in:cashback,sales',
+            ],
+
+            'multiplicador' => [
+                'required_if:ranking_enabled,1',
+                'nullable',
+                'integer',
+                'between:2,5',
+            ],
+
+            'reward_title' => [
+                'required_if:ranking_enabled,1',
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'reward_description' => [
+                'nullable',
+                'string',
+            ],
+
+            'reward_value' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Fechas
+            |--------------------------------------------------------------------------
+            */
+
             'fecha_inicio' => [
                 'required',
                 'date',
             ],
 
             'fecha_fin' => [
+
                 'required',
+
                 'date',
+
                 'after_or_equal:fecha_inicio',
 
-                function (string $attribute, mixed $value, Closure $fail) {
+                function (
+                    string $attribute,
+                    mixed $value,
+                    Closure $fail
+                ) {
 
                     $inicio = $this->fecha_inicio;
                     $fin = $value;
@@ -83,17 +138,21 @@ class StoreCashbackCampaignRequest extends FormRequest
                                 ->whereDate('fecha_fin', '>=', $inicio);
                         })
 
-                        ->where('campaign_type', $this->campaign_type)
+                        ->where(
+                            'campaign_type',
+                            $this->campaign_type
+                        )
 
                         ->exists();
 
                     if ($existe) {
 
                         $fail(
-                            'Ya existe una campaña del mismo tipo que se cruza con ese rango de fechas.'
+                            'Ya existe una campaña del mismo tipo en ese rango de fechas.'
                         );
                     }
-                },
+                }
+
             ],
 
             'activo' => [
@@ -155,38 +214,30 @@ class StoreCashbackCampaignRequest extends FormRequest
             'campaign_type.required' =>
             'Debe seleccionar el tipo de campaña.',
 
-            'campaign_type.in' =>
-            'El tipo de campaña no es válido.',
-
             'participant_type.required' =>
-            'Debe indicar quiénes participan.',
-
-            'participant_type.in' =>
-            'El tipo de participantes no es válido.',
+            'Debe seleccionar los participantes.',
 
             'porcentaje.required_if' =>
-            'Debe ingresar el porcentaje de cashback.',
+            'Debe ingresar el porcentaje de Cashback.',
 
-            'porcentaje.numeric' =>
-            'El porcentaje debe ser numérico.',
+            'ranking_type.required_if' =>
+            'Seleccione el tipo de Ranking.',
 
-            'porcentaje.min' =>
-            'El porcentaje debe ser mayor que cero.',
+            'multiplicador.required_if' =>
+            'Seleccione el multiplicador.',
 
-            'porcentaje.max' =>
-            'El porcentaje no puede ser mayor a 100.',
-
-            'valor_alerta_factura.numeric' =>
-            'El valor de alerta debe ser numérico.',
+            'reward_title.required_if' =>
+            'Ingrese el nombre del premio.',
 
             'fecha_inicio.required' =>
             'Seleccione la fecha de inicio.',
 
             'fecha_fin.required' =>
-            'Seleccione la fecha de fin.',
+            'Seleccione la fecha final.',
 
             'fecha_fin.after_or_equal' =>
-            'La fecha fin debe ser mayor o igual a la fecha de inicio.',
+            'La fecha fin debe ser mayor o igual a la fecha inicio.',
+
         ];
     }
 }

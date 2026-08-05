@@ -18,6 +18,14 @@ class CashbackCampaign extends Model
 
         'campaign_type',
 
+        'participant_type',
+
+        'ranking_enabled',
+
+        'ranking_processed',
+
+        'ranking_type',
+
         'porcentaje',
 
         'valor_alerta_factura',
@@ -27,15 +35,21 @@ class CashbackCampaign extends Model
         'fecha_fin',
 
         'activo',
+
     ];
 
     protected $casts = [
 
         'activo' => 'boolean',
 
+        'ranking_enabled' => 'boolean',
+
+        'ranking_processed' => 'boolean',
+
         'fecha_inicio' => 'date',
 
         'fecha_fin' => 'date',
+
     ];
 
     /*
@@ -57,26 +71,20 @@ class CashbackCampaign extends Model
             ->whereDate('fecha_fin', '>=', now());
     }
 
-    public function scopeCashback(Builder $query): Builder
-    {
+    public function scopeCashback(
+        Builder $query
+    ): Builder {
+
         return $query->where(
             'campaign_type',
             'cashback'
         );
     }
 
-    public function scopeRankingCashback(
-        Builder $query
-    ): Builder {
-        return $query->where(
-            'campaign_type',
-            'ranking_cashback'
-        );
-    }
-
     public function scopeRankingAccumulated(
         Builder $query
     ): Builder {
+
         return $query->where(
             'campaign_type',
             'ranking_accumulated'
@@ -116,9 +124,6 @@ class CashbackCampaign extends Model
 
             'cashback' =>
             'Cashback',
-
-            'ranking_cashback' =>
-            'Ranking Cashback',
 
             'ranking_accumulated' =>
             'Ranking Acumulado',

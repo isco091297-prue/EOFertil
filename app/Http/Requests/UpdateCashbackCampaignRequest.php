@@ -36,12 +36,12 @@ class UpdateCashbackCampaignRequest extends FormRequest
 
             'campaign_type' => [
                 'required',
-                'in:cashback,ranking_cashback,ranking_accumulated',
+                'in:cashback,ranking_accumulated',
             ],
 
             /*
             |--------------------------------------------------------------------------
-            | Configuración
+            | Cashback
             |--------------------------------------------------------------------------
             */
 
@@ -59,17 +59,70 @@ class UpdateCashbackCampaignRequest extends FormRequest
                 'min:0',
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Ranking Cashback
+            |--------------------------------------------------------------------------
+            */
+
+            'ranking_enabled' => [
+                'nullable',
+                'boolean',
+            ],
+
+            'ranking_type' => [
+                'nullable',
+                'in:cashback,sales',
+            ],
+
+            'multiplicador' => [
+                'nullable',
+                'numeric',
+                'min:2',
+                'max:5',
+            ],
+
+            'reward_title' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'reward_description' => [
+                'nullable',
+                'string',
+            ],
+
+            'reward_value' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Fechas
+            |--------------------------------------------------------------------------
+            */
+
             'fecha_inicio' => [
                 'required',
                 'date',
             ],
 
             'fecha_fin' => [
+
                 'required',
+
                 'date',
+
                 'after_or_equal:fecha_inicio',
 
-                function (string $attribute, mixed $value, Closure $fail) {
+                function (
+                    string $attribute,
+                    mixed $value,
+                    Closure $fail
+                ) {
 
                     $inicio = $this->fecha_inicio;
                     $fin = $value;
@@ -101,10 +154,11 @@ class UpdateCashbackCampaignRequest extends FormRequest
                     if ($existe) {
 
                         $fail(
-                            'Ya existe una campaña del mismo tipo que se cruza con ese rango de fechas.'
+                            'Ya existe una campaña del mismo tipo en ese rango de fechas.'
                         );
                     }
-                },
+                }
+
             ],
 
             'activo' => [
@@ -198,6 +252,7 @@ class UpdateCashbackCampaignRequest extends FormRequest
 
             'fecha_fin.after_or_equal' =>
             'La fecha fin debe ser mayor o igual a la fecha de inicio.',
+
         ];
     }
 }

@@ -28,25 +28,10 @@
 
                     Campaña
 
-                    <span class="text-red-600">*</span>
-
                 </label>
 
-                <select name="cashback_campaign_id" class="w-full rounded-xl border border-gray-300 px-4 py-3">
-
-                    <option value="">
-                        Seleccione una campaña
-                    </option>
-
-                    @foreach ($campaigns as $campaign)
-                        <option value="{{ $campaign->id }}" @selected(old('cashback_campaign_id', $rankingReward->cashback_campaign_id ?? request()->route('cashbackCampaign')?->id) == $campaign->id)>
-
-                            {{ $campaign->nombre }}
-
-                        </option>
-                    @endforeach
-
-                </select>
+                <input type="text" readonly value="{{ $cashbackCampaign->nombre }}"
+                    class="w-full rounded-xl border border-gray-200 bg-gray-100 px-4 py-3">
 
             </div>
 
@@ -78,14 +63,24 @@
                 <select id="reward_type" name="reward_type_id"
                     class="w-full rounded-xl border border-gray-300 px-4 py-3">
 
-                    @foreach ($rewardTypes as $type)
-                        <option value="{{ $type->id }}" data-code="{{ $type->codigo }}"
-                            @selected(old('reward_type_id', $rankingReward->reward_type_id ?? '') == $type->id)>
+                    @if ($rewardTypes->isEmpty())
 
-                            {{ $type->nombre }}
+                        <option value="">
+
+                            No existen tipos de premio registrados
 
                         </option>
-                    @endforeach
+                    @else
+                        @foreach ($rewardTypes as $type)
+                            <option value="{{ $type->id }}" data-code="{{ $type->codigo }}"
+                                @selected(old('reward_type_id', $rankingReward->reward_type_id ?? '') == $type->id)>
+
+                                {{ $type->nombre }}
+
+                            </option>
+                        @endforeach
+
+                    @endif
 
                 </select>
 
@@ -188,7 +183,9 @@
                     <select name="multiplicador" class="w-full rounded-xl border border-gray-300 px-4 py-3">
 
                         <option value="">
+
                             No aplica
+
                         </option>
 
                         <option value="2" @selected(old('multiplicador', $rankingReward->multiplicador ?? '') == 2)>
@@ -219,7 +216,7 @@
 
                     <p class="mt-2 text-sm text-gray-500">
 
-                        Solo aplica cuando el premio es Cashback.
+                        Solo aplica cuando el tipo de premio es Multiplicador de Cashback.
 
                     </p>
 
@@ -254,21 +251,34 @@
 
         const reward = document.getElementById('reward_type');
 
-        const container = document.getElementById('cashback-multiplier-container');
+        const container = document.getElementById(
+            'cashback-multiplier-container'
+        );
 
         function refresh() {
+
+            if (!reward) return;
+
+            if (reward.options.length === 0) {
+
+                container.style.display = 'none';
+
+                return;
+
+            }
 
             const option = reward.options[reward.selectedIndex];
 
             const code = option.dataset.code;
 
-            container.style.display = (code === 'cashback') ?
+            container.style.display =
+                (code === 'cashback_multiplier') ?
                 'block' :
                 'none';
 
         }
 
-        reward.addEventListener('change', refresh);
+        reward?.addEventListener('change', refresh);
 
         refresh();
 

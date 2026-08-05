@@ -6,7 +6,7 @@
 
     <x-card>
 
-        <div class="flex items-center justify-between mb-6">
+        <div class="mb-6 flex items-center justify-between">
 
             <div>
 
@@ -18,13 +18,14 @@
 
                 <p class="mt-1 text-gray-500">
 
-                    Administra los premios de cada campaña.
+                    Campaña:
+                    <strong>{{ $cashbackCampaign->nombre }}</strong>
 
                 </p>
 
             </div>
 
-            <a href="{{ route('ranking-rewards.create') }}"
+            <a href="{{ route('cashback-campaigns.ranking-rewards.create', $cashbackCampaign) }}"
                 class="rounded-lg bg-green-600 px-5 py-3 font-semibold text-white hover:bg-green-700">
 
                 + Nuevo Premio
@@ -45,7 +46,7 @@
 
             <div class="flex gap-3">
 
-                <input type="text" name="search" value="{{ $search }}" placeholder="Buscar por campaña o premio..."
+                <input type="text" name="search" value="{{ $search }}" placeholder="Buscar premio..."
                     class="w-full rounded-lg border border-gray-300 px-4 py-3">
 
                 <button class="rounded-lg bg-gray-800 px-6 py-3 font-semibold text-white hover:bg-black">
@@ -55,7 +56,7 @@
                 </button>
 
                 @if ($search)
-                    <a href="{{ route('ranking-rewards.index') }}"
+                    <a href="{{ route('cashback-campaigns.ranking-rewards.index', $cashbackCampaign) }}"
                         class="rounded-lg border border-gray-300 px-6 py-3 hover:bg-gray-100">
 
                         Limpiar
@@ -75,25 +76,19 @@
 
                     <tr>
 
-                        <th class="px-4 py-3 text-left">
-
-                            Campaña
-
-                        </th>
-
                         <th class="px-4 py-3 text-center">
 
                             Posición
 
                         </th>
 
-                        <th class="px-4 py-3 text-left">
+                        <th class="px-4 py-3">
 
                             Premio
 
                         </th>
 
-                        <th class="px-4 py-3 text-left">
+                        <th class="px-4 py-3">
 
                             Tipo
 
@@ -125,12 +120,6 @@
 
                     @forelse($rankingRewards as $reward)
                         <tr>
-
-                            <td class="px-4 py-4">
-
-                                {{ $reward->campaign->nombre }}
-
-                            </td>
 
                             <td class="px-4 py-4 text-center font-bold">
 
@@ -179,18 +168,10 @@
 
                             <td class="px-4 py-4 text-center">
 
-                                @if ($reward->rewardType->codigo === 'cashback_multiplier')
-                                    <span class="font-semibold text-green-700">
-
-                                        {{ number_format($reward->multiplicador, 2) }}x
-
-                                    </span>
+                                @if ($reward->rewardType->codigo == 'cashback_multiplier')
+                                    {{ number_format($reward->multiplicador, 2) }}x
                                 @else
-                                    <span>
-
-                                        $ {{ number_format($reward->valor_referencial, 2) }}
-
-                                    </span>
+                                    $ {{ number_format($reward->valor_referencial, 2) }}
                                 @endif
 
                             </td>
@@ -217,15 +198,16 @@
 
                                 <div class="flex justify-center gap-2">
 
-                                    <a href="{{ route('ranking-rewards.edit', $reward) }}"
+                                    <a href="{{ route('cashback-campaigns.ranking-rewards.edit', [$cashbackCampaign, $reward]) }}"
                                         class="rounded-lg bg-blue-600 px-3 py-2 text-white hover:bg-blue-700">
 
                                         Editar
 
                                     </a>
 
-                                    <form action="{{ route('ranking-rewards.destroy', $reward) }}" method="POST"
-                                        onsubmit="return confirm('¿Desea eliminar este premio?')">
+                                    <form
+                                        action="{{ route('cashback-campaigns.ranking-rewards.destroy', [$cashbackCampaign, $reward]) }}"
+                                        method="POST" onsubmit="return confirm('¿Desea eliminar este premio?')">
 
                                         @csrf
                                         @method('DELETE')
@@ -248,7 +230,7 @@
 
                             <tr>
 
-                                <td colspan="7" class="py-10 text-center text-gray-500">
+                                <td colspan="6" class="py-10 text-center text-gray-500">
 
                                     No existen premios registrados.
 
