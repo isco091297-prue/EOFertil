@@ -44,6 +44,8 @@ class User extends Authenticatable
         'is_active',
         'privacy_accepted',
         'privacy_accepted_at',
+        'responsibility_accepted',
+        'responsibility_accepted_at',
         'last_login',
         'cashback_total',
         'cashback_claimed',
@@ -70,6 +72,9 @@ class User extends Authenticatable
             'privacy_accepted' => 'boolean',
 
             'privacy_accepted_at' => 'datetime',
+
+            'responsibility_accepted' => 'boolean',
+            'responsibility_accepted_at' => 'datetime',
 
             'is_active' => 'boolean',
 

@@ -80,6 +80,7 @@ class AuthService
         }
 
         return User::create([
+
             'role_id' => $role->id,
 
             'warehouse_id' => $data['warehouse_id'],
@@ -112,9 +113,20 @@ class AuthService
             // El administrador deberá aprobarlo
             'is_active' => false,
 
+            /*
+    |--------------------------------------------------------------------------
+    | Aceptación de documentos legales
+    |--------------------------------------------------------------------------
+    */
+
             'privacy_accepted' => true,
 
             'privacy_accepted_at' => now(),
+
+            'responsibility_accepted' => true,
+
+            'responsibility_accepted_at' => now(),
+
         ]);
     }
 }
