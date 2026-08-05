@@ -8,8 +8,8 @@ use App\Http\Resources\CashbackBalanceResource;
 use App\Http\Resources\CashbackCampaignResource;
 use App\Http\Resources\CashbackHistoryResource;
 use App\Http\Resources\InvoiceResource;
-use App\Services\CashbackModuleService;
-use App\Services\InvoiceService;
+use App\Services\Cashback\CashbackModuleService;
+use App\Services\Invoice\InvoiceService;
 use App\Support\ApiResponse;
 use Exception;
 use Illuminate\Http\Request;
@@ -104,7 +104,7 @@ class CashbackController extends Controller
     {
         try {
 
-            $invoice = $this->cashbackModuleService->showInvoice(
+            $invoice = $this->cashbackModuleService->invoice(
                 $request->user(),
                 $invoice
             );
