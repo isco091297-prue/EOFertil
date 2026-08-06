@@ -14,16 +14,12 @@ class ProductController extends Controller
      */
     public function index()
     {
-        dd('ESTOY EN PRODUCTCONTROLLER');
         $products = Product::query()
             ->with([
                 'brand:id,name',
                 'category:id,name',
             ])
             ->where('is_active', true)
-            ->whereHas('brand', function ($query) {
-                $query->where('name', 'EOFERTIL');
-            })
             ->orderBy('name')
             ->get()
             ->map(function (Product $product) {
