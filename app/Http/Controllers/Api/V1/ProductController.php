@@ -14,6 +14,7 @@ class ProductController extends Controller
      */
     public function index()
     {
+        dd('ESTOY EN PRODUCTCONTROLLER');
         $products = Product::query()
             ->with([
                 'brand:id,name',
