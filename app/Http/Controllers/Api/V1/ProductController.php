@@ -20,6 +20,9 @@ class ProductController extends Controller
                 'category:id,name',
             ])
             ->where('is_active', true)
+            ->whereHas('brand', function ($query) {
+                $query->where('name', 'EOFERTIL');
+            })
             ->orderBy('name')
             ->get()
             ->map(function (Product $product) {
