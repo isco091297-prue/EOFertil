@@ -14,6 +14,7 @@ class ProductController extends Controller
      */
     public function index()
     {
+        abort(500, 'ESTOY EN Api\\V1\\ProductController');
         $products = Product::query()
             ->with([
                 'brand:id,name',
