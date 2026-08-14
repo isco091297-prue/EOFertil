@@ -149,7 +149,10 @@ Route::prefix('v1')->group(function () {
             '/cashback/invoices',
             [CashbackController::class, 'storeInvoice']
         );
-
+        Route::post(
+            '/cashback/redeem',
+            [CashbackController::class, 'redeem']
+        );
         /*
         |--------------------------------------------------------------------------
         | Futuras APIs

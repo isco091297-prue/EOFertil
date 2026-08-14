@@ -13,15 +13,19 @@ use App\Services\Invoice\InvoiceService;
 use App\Services\Ranking\CampaignUserRankingService;
 use App\Support\ApiResponse;
 use Exception;
+use RuntimeException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\Api\V1\StoreCashbackRedemptionRequest;
+use App\Services\Cashback\CashbackRedemptionService;
 
 class CashbackController extends Controller
 {
     public function __construct(
         private readonly CashbackModuleService $cashbackModuleService,
         private readonly InvoiceService $invoiceService,
-        private readonly CampaignUserRankingService $campaignUserRankingService
+        private readonly CampaignUserRankingService $campaignUserRankingService,
+        private readonly CashbackRedemptionService $cashbackRedemptionService
     ) {}
 
     /**
@@ -68,6 +72,56 @@ class CashbackController extends Controller
 
             return ApiResponse::error(
                 $e->getMessage(),
+                null,
+                500
+            );
+        }
+    }
+    /**
+     * Solicitar canje de cashback.
+     */
+    public function redeem(
+        StoreCashbackRedemptionRequest $request
+    ) {
+        try {
+
+            $redemption = $this->cashbackRedemptionService->redeem(
+                $request->user(),
+                (float) $request->validated('monto')
+            );
+
+            return ApiResponse::success(
+                [
+                    'id' => $redemption->id,
+
+                    'monto' =>
+                    (float) $redemption->monto,
+
+                    'estado' =>
+                    $redemption->estado,
+
+                    'cashback_available' =>
+                    (float) $redemption->user->cashback_available,
+
+                    'cashback_claimed' =>
+                    (float) $redemption->user->cashback_claimed,
+
+                    'telegram_enviado' =>
+                    $redemption->telegram_enviado_at !== null,
+                ],
+                'Solicitud de canje registrada correctamente.'
+            );
+        } catch (RuntimeException $e) {
+
+            return ApiResponse::error(
+                $e->getMessage(),
+                null,
+                422
+            );
+        } catch (Exception $e) {
+
+            return ApiResponse::error(
+                'No fue posible registrar la solicitud de canje.',
                 null,
                 500
             );
