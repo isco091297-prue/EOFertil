@@ -4,6 +4,8 @@ namespace App\Services\Ranking;
 
 use App\Models\CampaignUserRanking;
 use App\Models\CashbackCampaign;
+use App\Models\Invoice;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 
 class CampaignUserRankingService
@@ -35,23 +37,17 @@ class CampaignUserRankingService
         ) {
 
             $query
-
                 ->orderByDesc('sales_total')
-
                 ->orderByDesc('cashback_total');
         } else {
 
             $query
-
                 ->orderByDesc('cashback_total')
-
                 ->orderByDesc('sales_total');
         }
 
         return $query
-
             ->orderBy('invoice_count')
-
             ->get();
     }
 
@@ -64,12 +60,10 @@ class CampaignUserRankingService
     ): Collection {
 
         return $this->getRanking($campaign)
-
             ->where(
                 'warehouse_id',
                 $warehouseId
             )
-
             ->values();
     }
 
@@ -82,12 +76,10 @@ class CampaignUserRankingService
     ): Collection {
 
         return $this->getRanking($campaign)
-
             ->where(
                 'zone_id',
                 $zoneId
             )
-
             ->values();
     }
 
@@ -100,12 +92,10 @@ class CampaignUserRankingService
     ): Collection {
 
         return $this->getRanking($campaign)
-
             ->where(
                 'branch_id',
                 $branchId
             )
-
             ->values();
     }
 
@@ -144,13 +134,12 @@ class CampaignUserRankingService
         )->first();
     }
 
-
     /**
      * Actualizar el acumulado del ranking a partir de una factura.
      */
     public function updateFromInvoice(
         CashbackCampaign $campaign,
-        \App\Models\Invoice $invoice,
+        Invoice $invoice,
         float $salesTotal,
         float $cashbackTotal
     ): CampaignUserRanking {
@@ -161,19 +150,28 @@ class CampaignUserRankingService
         ]);
 
         if (! $ranking->exists) {
-            $ranking->warehouse_id = $invoice->user->warehouse_id;
-            $ranking->zone_id = $invoice->user->zone_id;
-            $ranking->branch_id = $invoice->branch_id;
+
+            $ranking->warehouse_id =
+                $invoice->user->warehouse_id;
+
+            $ranking->zone_id =
+                $invoice->user->zone_id;
+
+            $ranking->branch_id =
+                $invoice->branch_id;
+
             $ranking->sales_total = 0;
             $ranking->cashback_total = 0;
             $ranking->invoice_count = 0;
         }
 
         $ranking->sales_total =
-            (float) $ranking->sales_total + $salesTotal;
+            (float) $ranking->sales_total +
+            $salesTotal;
 
         $ranking->cashback_total =
-            (float) $ranking->cashback_total + $cashbackTotal;
+            (float) $ranking->cashback_total +
+            $cashbackTotal;
 
         $ranking->invoice_count =
             (int) $ranking->invoice_count + 1;
@@ -185,14 +183,8 @@ class CampaignUserRankingService
         return $ranking->fresh();
     }
 
-    /**
-     * Datos del ranking que consume la aplicación móvil.
-     *
-     * Devuelve los primeros participantes y, por separado,
-     * la posición actual del usuario autenticado.
-     */
     public function getMobileRanking(
-        \App\Models\User $user,
+        User $user,
         int $limit = 10
     ): array {
 
@@ -201,18 +193,30 @@ class CampaignUserRankingService
             ->whereDate('fecha_inicio', '<=', now())
             ->whereDate('fecha_fin', '>=', now())
             ->where(function ($query) {
+
                 $query
-                    ->where('campaign_type', 'ranking_accumulated')
+                    ->where(
+                        'campaign_type',
+                        'ranking_accumulated'
+                    )
                     ->orWhere(function ($q) {
+
                         $q
-                            ->where('campaign_type', 'cashback')
-                            ->where('ranking_enabled', true);
+                            ->where(
+                                'campaign_type',
+                                'cashback'
+                            )
+                            ->where(
+                                'ranking_enabled',
+                                true
+                            );
                     });
             })
             ->latest('fecha_inicio')
             ->first();
 
         if (! $campaign) {
+
             return [
                 'campaign' => null,
                 'ranking' => [],
@@ -222,19 +226,142 @@ class CampaignUserRankingService
         }
 
         $query = CampaignUserRanking::query()
+
             ->with([
                 'user:id,first_name,last_name',
                 'warehouse:id,name',
                 'zone:id,name',
                 'branch:id,name',
             ])
-            ->where('cashback_campaign_id', $campaign->id);
+
+            ->where(
+                'cashback_campaign_id',
+                $campaign->id
+            );
+
+
+        switch ($campaign->participant_type) {
+
+            case 'warehouse':
+
+                if ($user->warehouse_id === null) {
+
+                    return [
+                        'campaign' => [
+                            'id' => $campaign->id,
+                            'nombre' => $campaign->nombre,
+                            'descripcion' => $campaign->descripcion,
+                            'fecha_inicio' =>
+                            optional(
+                                $campaign->fecha_inicio
+                            )->toDateString(),
+                            'fecha_fin' =>
+                            optional(
+                                $campaign->fecha_fin
+                            )->toDateString(),
+                            'ranking_type' =>
+                            $campaign->ranking_type,
+                            'participant_type' =>
+                            $campaign->participant_type,
+                        ],
+                        'ranking' => [],
+                        'my_ranking' => null,
+                        'total_participants' => 0,
+                    ];
+                }
+
+                $query->where(
+                    'warehouse_id',
+                    $user->warehouse_id
+                );
+
+                break;
+
+            case 'zone':
+
+                if ($user->zone_id === null) {
+
+                    return [
+                        'campaign' => [
+                            'id' => $campaign->id,
+                            'nombre' => $campaign->nombre,
+                            'descripcion' => $campaign->descripcion,
+                            'fecha_inicio' =>
+                            optional(
+                                $campaign->fecha_inicio
+                            )->toDateString(),
+                            'fecha_fin' =>
+                            optional(
+                                $campaign->fecha_fin
+                            )->toDateString(),
+                            'ranking_type' =>
+                            $campaign->ranking_type,
+                            'participant_type' =>
+                            $campaign->participant_type,
+                        ],
+                        'ranking' => [],
+                        'my_ranking' => null,
+                        'total_participants' => 0,
+                    ];
+                }
+
+                $query->where(
+                    'zone_id',
+                    $user->zone_id
+                );
+
+                break;
+
+            case 'branch':
+
+                if ($user->branch_id === null) {
+
+                    return [
+                        'campaign' => [
+                            'id' => $campaign->id,
+                            'nombre' => $campaign->nombre,
+                            'descripcion' => $campaign->descripcion,
+                            'fecha_inicio' =>
+                            optional(
+                                $campaign->fecha_inicio
+                            )->toDateString(),
+                            'fecha_fin' =>
+                            optional(
+                                $campaign->fecha_fin
+                            )->toDateString(),
+                            'ranking_type' =>
+                            $campaign->ranking_type,
+                            'participant_type' =>
+                            $campaign->participant_type,
+                        ],
+                        'ranking' => [],
+                        'my_ranking' => null,
+                        'total_participants' => 0,
+                    ];
+                }
+
+                $query->where(
+                    'branch_id',
+                    $user->branch_id
+                );
+
+                break;
+
+            case 'all':
+            default:
+
+                break;
+        }
+
+
 
         if ($campaign->ranking_type === 'sales') {
+
             $query
                 ->orderByDesc('sales_total')
                 ->orderByDesc('cashback_total');
         } else {
+
             $query
                 ->orderByDesc('cashback_total')
                 ->orderByDesc('sales_total');
@@ -246,56 +373,122 @@ class CampaignUserRankingService
 
         $all = $query->get();
 
+
         $totalParticipants = $all->count();
 
-        $rewards = $campaign->rankingRewards()
+        /*
+        |--------------------------------------------------------------------------
+        | PREMIOS
+        |--------------------------------------------------------------------------
+        */
+
+        $rewards = $campaign
+            ->rankingRewards()
             ->where('activo', true)
             ->orderBy('posicion')
             ->get()
             ->keyBy('posicion');
 
+        /*
+        |--------------------------------------------------------------------------
+        | POSICIÓN DEL USUARIO
+        |--------------------------------------------------------------------------
+        */
+
         $myRanking = null;
 
         foreach ($all as $index => $participant) {
+
             $position = $index + 1;
 
-            if ((int) $participant->user_id === (int) $user->id) {
+            if (
+                (int) $participant->user_id ===
+                (int) $user->id
+            ) {
+
                 $myRanking = $this->mobileParticipant(
                     $participant,
                     $position,
                     true,
                     $rewards
                 );
+
                 break;
             }
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | TOP DEL RANKING
+        |--------------------------------------------------------------------------
+        */
+
         $ranking = $all
-            ->take(max(1, min($limit, 50)))
+
+            ->take(
+                max(
+                    1,
+                    min($limit, 50)
+                )
+            )
+
             ->values()
-            ->map(function (CampaignUserRanking $participant, int $index) use ($rewards) {
-                return $this->mobileParticipant(
-                    $participant,
-                    $index + 1,
-                    false,
-                    $rewards
-                );
-            })
+
+            ->map(
+                function (
+                    CampaignUserRanking $participant,
+                    int $index
+                ) use ($rewards) {
+
+                    return $this->mobileParticipant(
+                        $participant,
+                        $index + 1,
+                        false,
+                        $rewards
+                    );
+                }
+            )
+
             ->all();
 
         return [
+
             'campaign' => [
-                'id' => $campaign->id,
-                'nombre' => $campaign->nombre,
-                'descripcion' => $campaign->descripcion,
-                'fecha_inicio' => optional($campaign->fecha_inicio)->toDateString(),
-                'fecha_fin' => optional($campaign->fecha_fin)->toDateString(),
-                'ranking_type' => $campaign->ranking_type,
-                'participant_type' => $campaign->participant_type,
+
+                'id' =>
+                $campaign->id,
+
+                'nombre' =>
+                $campaign->nombre,
+
+                'descripcion' =>
+                $campaign->descripcion,
+
+                'fecha_inicio' =>
+                optional(
+                    $campaign->fecha_inicio
+                )->toDateString(),
+
+                'fecha_fin' =>
+                optional(
+                    $campaign->fecha_fin
+                )->toDateString(),
+
+                'ranking_type' =>
+                $campaign->ranking_type,
+
+                'participant_type' =>
+                $campaign->participant_type,
             ],
-            'ranking' => $ranking,
-            'my_ranking' => $myRanking,
-            'total_participants' => $totalParticipants,
+
+            'ranking' =>
+            $ranking,
+
+            'my_ranking' =>
+            $myRanking,
+
+            'total_participants' =>
+            $totalParticipants,
         ];
     }
 
@@ -318,23 +511,53 @@ class CampaignUserRankingService
         $reward = $rewards->get($position);
 
         return [
-            'position' => $position,
-            'user_id' => $participant->user_id,
-            'name' => $name !== '' ? $name : 'Participante',
-            'sales_total' => (float) $participant->sales_total,
-            'cashback_total' => (float) $participant->cashback_total,
-            'invoice_count' => (int) $participant->invoice_count,
-            'is_me' => $isMe,
-            'reward' => $reward ? [
-                'titulo' => $reward->titulo,
-                'descripcion' => $reward->descripcion,
-                'valor_referencial' => $reward->valor_referencial !== null
-                    ? (float) $reward->valor_referencial
-                    : null,
-                'multiplicador' => $reward->multiplicador !== null
-                    ? (float) $reward->multiplicador
-                    : null,
-            ] : null,
+
+            'position' =>
+            $position,
+
+            'user_id' =>
+            $participant->user_id,
+
+            'name' =>
+            $name !== ''
+                ? $name
+                : 'Participante',
+
+            'sales_total' =>
+            (float) $participant->sales_total,
+
+            'cashback_total' =>
+            (float) $participant->cashback_total,
+
+            'invoice_count' =>
+            (int) $participant->invoice_count,
+
+            'is_me' =>
+            $isMe,
+
+            'reward' =>
+            $reward
+                ? [
+
+                    'titulo' =>
+                    $reward->titulo,
+
+                    'descripcion' =>
+                    $reward->descripcion,
+
+                    'valor_referencial' =>
+                    $reward->valor_referencial !== null
+                        ? (float)
+                        $reward->valor_referencial
+                        : null,
+
+                    'multiplicador' =>
+                    $reward->multiplicador !== null
+                        ? (float)
+                        $reward->multiplicador
+                        : null,
+                ]
+                : null,
         ];
     }
 
