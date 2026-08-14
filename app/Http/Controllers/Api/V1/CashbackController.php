@@ -10,6 +10,7 @@ use App\Http\Resources\CashbackHistoryResource;
 use App\Http\Resources\InvoiceResource;
 use App\Services\Cashback\CashbackModuleService;
 use App\Services\Invoice\InvoiceService;
+use App\Services\Ranking\CampaignUserRankingService;
 use App\Support\ApiResponse;
 use Exception;
 use Illuminate\Http\Request;
@@ -19,7 +20,8 @@ class CashbackController extends Controller
 {
     public function __construct(
         private readonly CashbackModuleService $cashbackModuleService,
-        private readonly InvoiceService $invoiceService
+        private readonly InvoiceService $invoiceService,
+        private readonly CampaignUserRankingService $campaignUserRankingService
     ) {}
 
     /**
@@ -64,6 +66,28 @@ class CashbackController extends Controller
             );
         } catch (Exception $e) {
 
+            return ApiResponse::error(
+                $e->getMessage(),
+                null,
+                500
+            );
+        }
+    }
+
+    /**
+     * Ranking vigente para la aplicación móvil.
+     */
+    public function ranking(Request $request)
+    {
+        try {
+            $ranking = $this->campaignUserRankingService
+                ->getMobileRanking($request->user());
+
+            return ApiResponse::success(
+                $ranking,
+                'Ranking obtenido correctamente.'
+            );
+        } catch (Exception $e) {
             return ApiResponse::error(
                 $e->getMessage(),
                 null,
