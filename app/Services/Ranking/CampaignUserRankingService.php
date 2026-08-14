@@ -273,7 +273,7 @@ class CampaignUserRankingService
         $ranking = $all
             ->take(max(1, min($limit, 50)))
             ->values()
-            ->map(function (CampaignUserRanking $participant, int $index) {
+            ->map(function (CampaignUserRanking $participant, int $index) use ($rewards) {
                 return $this->mobileParticipant(
                     $participant,
                     $index + 1,
@@ -311,8 +311,8 @@ class CampaignUserRankingService
 
         $name = trim(
             ($participant->user?->first_name ?? '') .
-            ' ' .
-            ($participant->user?->last_name ?? '')
+                ' ' .
+                ($participant->user?->last_name ?? '')
         );
 
         $reward = $rewards->get($position);
