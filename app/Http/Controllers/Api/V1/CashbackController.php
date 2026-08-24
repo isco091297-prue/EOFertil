@@ -272,7 +272,7 @@ class CashbackController extends Controller
             return ApiResponse::error(
                 $e->getMessage(),
                 null,
-                500
+                422
             );
         }
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V1;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Carbon\Carbon;
 
 class StoreInvoiceRequest extends FormRequest
 {
@@ -26,16 +27,48 @@ class StoreInvoiceRequest extends FormRequest
             'cashback_campaign_id' => [
                 'required',
                 'integer',
+                'exists:cashback_campaigns,id',
             ],
 
             'numero_factura_original' => [
                 'required',
                 'digits:6',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    $user = $this->user();
+
+                    if (!$user?->branch_id) {
+                        $fail('Tu usuario no tiene una sucursal asignada.');
+                        return;
+                    }
+
+                    $exists = \App\Models\Invoice::query()
+                        ->where('branch_id', $user->branch_id)
+                        ->where(
+                            'numero_factura_normalizado',
+                            preg_replace('/\D/', '', (string) $value)
+                        )
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('Esta factura ya fue registrada en tu sucursal.');
+                    }
+                },
             ],
 
             'fecha_factura' => [
                 'required',
-                'date',
+                'date_format:Y-m-d',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    $date = Carbon::createFromFormat('Y-m-d', (string) $value)->startOfDay();
+                    $today = now()->startOfDay();
+                    $firstDayOfMonth = $today->copy()->startOfMonth();
+
+                    if ($date->lt($firstDayOfMonth) || $date->gt($today)) {
+                        $fail(
+                            'Solo puedes registrar facturas del mes en curso y no posteriores a hoy.'
+                        );
+                    }
+                },
             ],
 
             /*
@@ -81,6 +114,7 @@ class StoreInvoiceRequest extends FormRequest
             'items.*.product_id' => [
                 'required',
                 'integer',
+                'exists:products,id',
             ],
 
             'items.*.valor' => [
@@ -113,8 +147,8 @@ class StoreInvoiceRequest extends FormRequest
             'fecha_factura.required' =>
             'Debe ingresar la fecha de la factura.',
 
-            'fecha_factura.date' =>
-            'La fecha de la factura es inválida.',
+            'fecha_factura.date_format' =>
+            'La fecha de la factura es inválida. Usa el formato YYYY-MM-DD.',
 
             /*
             |--------------------------------------------------------------------------
