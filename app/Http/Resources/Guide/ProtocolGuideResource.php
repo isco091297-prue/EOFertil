@@ -101,6 +101,8 @@ class ProtocolGuideResource extends JsonResource
 
                                     'nombre' => $ingredient->activeIngredient?->name,
 
+                                    'descripcion' => $ingredient->activeIngredient?->description,
+
                                 ],
 
                                 'productos' => $ingredient->products->map(function ($item) {
