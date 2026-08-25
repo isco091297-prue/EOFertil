@@ -11,15 +11,19 @@ use Exception;
 
 class CashbackModuleService
 {
-    /**
-     * Campaña vigente.
-     */
-    public function currentCampaign(): ?CashbackCampaign
-    {
-        return CashbackCampaign::vigentes()
-            ->latest('fecha_inicio')
-            ->first();
-    }
+   /**
+ * Campaña Cashback vigente.
+ *
+ * Esta campaña es independiente del ranking acumulado.
+ * El ranking acumulado se consulta mediante su propio endpoint.
+ */
+public function currentCampaign(): ?CashbackCampaign
+{
+    return CashbackCampaign::vigentes()
+        ->where('campaign_type', 'cashback')
+        ->latest('fecha_inicio')
+        ->first();
+}
 
     /**
      * Saldos del usuario.
