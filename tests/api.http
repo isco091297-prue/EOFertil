@@ -69,3 +69,10 @@ Accept: application/json
         }
     ]
 }
+###############################################################
+### RANKING ACUMULADO
+###############################################################
+
+GET {{baseUrl}}/ranking-accumulated
+Authorization: Bearer {{token}}
+Accept: application/json

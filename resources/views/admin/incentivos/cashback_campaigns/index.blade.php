@@ -188,26 +188,28 @@
 
                                         </a>
 
-                                        <a href="{{ route('ranking-rewards.index', $campaign) }}"
-                                            class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                                        @if ($campaign->campaign_type === 'ranking_accumulated' || $campaign->ranking_enabled)
+                                            <a href="{{ route('ranking-rewards.index', $campaign) }}"
+                                                class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
 
-                                            🎁 Premios
+                                                🎁 Premios
 
-                                        </a>
+                                            </a>
 
-                                        <a href="{{ route('cashback-campaigns.ranking', $campaign) }}"
-                                            class="rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700">
+                                            <a href="{{ route('cashback-campaigns.ranking', $campaign) }}"
+                                                class="rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700">
 
-                                            🏆 Ranking
+                                                🏆 Ranking
 
-                                        </a>
+                                            </a>
 
-                                        <a href="{{ route('cashback-campaigns.winners', $campaign) }}"
-                                            class="rounded-lg bg-purple-600 px-3 py-2 text-sm font-medium text-white hover:bg-purple-700">
+                                            <a href="{{ route('cashback-campaigns.winners', $campaign) }}"
+                                                class="rounded-lg bg-purple-600 px-3 py-2 text-sm font-medium text-white hover:bg-purple-700">
 
-                                            🥇 Ganadores
+                                                🥇 Ganadores
 
-                                        </a>
+                                            </a>
+                                        @endif
 
                                         <form action="{{ route('cashback-campaigns.destroy', $campaign) }}" method="POST">
 

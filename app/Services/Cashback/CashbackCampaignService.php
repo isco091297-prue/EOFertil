@@ -22,24 +22,67 @@ class CashbackCampaignService
 
         return DB::transaction(function () use ($data) {
 
+            $campaignType = $data['campaign_type'];
+
+            /*
+            |--------------------------------------------------------------------------
+            | Configuración según tipo de campaña
+            |--------------------------------------------------------------------------
+            |
+            | Cashback:
+            |   porcentaje = valor configurado
+            |   ranking_type = cashback/sales
+            |
+            | Ranking acumulado:
+            |   no utiliza porcentaje
+            |   acumulamos el valor de los productos EOFertil
+            |   ranking_type = sales
+            |
+            */
+
+            $isAccumulated =
+                $campaignType === 'ranking_accumulated';
+
+            $rankingEnabled =
+                ! $isAccumulated &&
+                !empty($data['ranking_enabled']);
+
             $campaign = CashbackCampaign::create([
 
-                'nombre' => $data['nombre'],
+                'nombre' =>
+                $data['nombre'],
 
-                'descripcion' => $data['descripcion'] ?? null,
+                'descripcion' =>
+                $data['descripcion'] ?? null,
 
-                'campaign_type' => $data['campaign_type'],
+                'campaign_type' =>
+                $campaignType,
 
-                'participant_type' => $data['participant_type'],
+                'participant_type' =>
+                $data['participant_type'],
 
                 'ranking_enabled' =>
-                !empty($data['ranking_enabled']),
+                $rankingEnabled,
 
                 'ranking_type' =>
-                $data['ranking_type'] ?? 'cashback',
+                $isAccumulated
+                    ? 'sales'
+                    : ($data['ranking_type'] ?? 'cashback'),
+
+                /*
+                |--------------------------------------------------------------------------
+                | Porcentaje
+                |--------------------------------------------------------------------------
+                |
+                | El acumulado no utiliza porcentaje.
+                | Guardamos 0 porque la columna actualmente no permite NULL.
+                |
+                */
 
                 'porcentaje' =>
-                $data['porcentaje'] ?? null,
+                $isAccumulated
+                    ? 0
+                    : ($data['porcentaje'] ?? 0),
 
                 'valor_alerta_factura' =>
                 $data['valor_alerta_factura'] ?? 0,
@@ -68,19 +111,28 @@ class CashbackCampaignService
 
             /*
             |--------------------------------------------------------------------------
-            | Ranking Cashback
+            | Premio automático del Ranking Cashback
             |--------------------------------------------------------------------------
+            |
+            | IMPORTANTE:
+            |
+            | Esto solamente aplica a Cashback con Ranking Cashback.
+            |
+            | Una campaña acumulada NO debe crear automáticamente
+            | un premio de multiplicador de Cashback.
+            |
             */
 
-            if (!empty($data['ranking_enabled'])) {
+            if (
+                $campaignType === 'cashback' &&
+                $rankingEnabled
+            ) {
 
                 $rewardType = RewardType::query()
-
                     ->where(
                         'codigo',
                         'cashback_multiplier'
                     )
-
                     ->first();
 
                 if ($rewardType) {
@@ -93,7 +145,8 @@ class CashbackCampaignService
                         'reward_type_id' =>
                         $rewardType->id,
 
-                        'posicion' => 1,
+                        'posicion' =>
+                        1,
 
                         'titulo' =>
                         $data['reward_title'],
@@ -107,7 +160,8 @@ class CashbackCampaignService
                         'multiplicador' =>
                         $data['multiplicador'],
 
-                        'activo' => true,
+                        'activo' =>
+                        true,
 
                     ]);
                 }
@@ -130,24 +184,48 @@ class CashbackCampaignService
             $data
         ) {
 
+            $campaignType =
+                $data['campaign_type'];
+
+            $isAccumulated =
+                $campaignType === 'ranking_accumulated';
+
+            $rankingEnabled =
+                ! $isAccumulated &&
+                !empty($data['ranking_enabled']);
+
             $campaign->update([
 
-                'nombre' => $data['nombre'],
+                'nombre' =>
+                $data['nombre'],
 
-                'descripcion' => $data['descripcion'] ?? null,
+                'descripcion' =>
+                $data['descripcion'] ?? null,
 
-                'campaign_type' => $data['campaign_type'],
+                'campaign_type' =>
+                $campaignType,
 
-                'participant_type' => $data['participant_type'],
+                'participant_type' =>
+                $data['participant_type'],
 
                 'ranking_enabled' =>
-                !empty($data['ranking_enabled']),
+                $rankingEnabled,
 
                 'ranking_type' =>
-                $data['ranking_type'] ?? 'cashback',
+                $isAccumulated
+                    ? 'sales'
+                    : ($data['ranking_type'] ?? 'cashback'),
+
+                /*
+                |--------------------------------------------------------------------------
+                | Porcentaje
+                |--------------------------------------------------------------------------
+                */
 
                 'porcentaje' =>
-                $data['porcentaje'] ?? null,
+                $isAccumulated
+                    ? 0
+                    : ($data['porcentaje'] ?? 0),
 
                 'valor_alerta_factura' =>
                 $data['valor_alerta_factura'] ?? 0,
@@ -180,15 +258,16 @@ class CashbackCampaignService
             |--------------------------------------------------------------------------
             */
 
-            if (!empty($data['ranking_enabled'])) {
+            if (
+                $campaignType === 'cashback' &&
+                $rankingEnabled
+            ) {
 
                 $rewardType = RewardType::query()
-
                     ->where(
                         'codigo',
                         'cashback_multiplier'
                     )
-
                     ->first();
 
                 if ($rewardType) {
@@ -196,8 +275,11 @@ class CashbackCampaignService
                     RankingReward::updateOrCreate(
 
                         [
-                            'cashback_campaign_id' => $campaign->id,
-                            'posicion' => 1,
+                            'cashback_campaign_id' =>
+                            $campaign->id,
+
+                            'posicion' =>
+                            1,
                         ],
 
                         [
@@ -216,18 +298,21 @@ class CashbackCampaignService
                             'multiplicador' =>
                             $data['multiplicador'],
 
-                            'activo' => true,
+                            'activo' =>
+                            true,
                         ]
-
                     );
                 }
             } else {
 
                 /*
                 |--------------------------------------------------------------------------
-                | Si el ranking fue desactivado,
-                | eliminar el premio asociado.
+                | Si no es Ranking Cashback
                 |--------------------------------------------------------------------------
+                |
+                | Esto también limpia los premios antiguos si una campaña
+                | Cashback con ranking se transforma en acumulada.
+                |
                 */
 
                 $campaign

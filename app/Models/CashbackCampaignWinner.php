@@ -39,6 +39,10 @@ class CashbackCampaignWinner extends Model
 
         'processed_at',
 
+        'reward_delivered',
+
+        'reward_delivered_at',
+
     ];
 
     protected $casts = [
@@ -52,6 +56,10 @@ class CashbackCampaignWinner extends Model
         'reward_multiplier' => 'decimal:2',
 
         'processed_at' => 'datetime',
+
+        'reward_delivered' => 'boolean',
+
+        'reward_delivered_at' => 'datetime',
 
     ];
 

@@ -93,7 +93,15 @@ Route::middleware([
         )->name(
             'cashback-campaigns.winners'
         );
-
+        Route::patch(
+            'winners/{winner}/deliver',
+            [
+                CashbackCampaignWinnerController::class,
+                'deliver',
+            ]
+        )->name(
+            'cashback-campaigns.winners.deliver'
+        );
         Route::resource(
             'ranking-rewards',
             RankingRewardController::class

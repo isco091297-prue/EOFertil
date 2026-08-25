@@ -18,6 +18,9 @@ class RankingRewardController extends Controller
         private readonly RankingRewardService $service
     ) {}
 
+    /**
+     * Lista de premios.
+     */
     public function index(
         Request $request,
         CashbackCampaign $cashbackCampaign
@@ -42,26 +45,32 @@ class RankingRewardController extends Controller
         );
     }
 
+    /**
+     * Formulario para crear premio.
+     */
     public function create(
         CashbackCampaign $cashbackCampaign
     ): View {
 
-        $rewardTypes = RewardType::where(
-            'activo',
-            true
-        )
-            ->orderBy('nombre')
-            ->get();
+        $rewardTypes = $this->getRewardTypes(
+            $cashbackCampaign
+        );
+
+        $rankingReward = null;
 
         return view(
             'admin.incentivos.ranking_rewards.create',
             compact(
                 'cashbackCampaign',
-                'rewardTypes'
+                'rewardTypes',
+                'rankingReward'
             )
         );
     }
 
+    /**
+     * Guardar premio.
+     */
     public function store(
         StoreRankingRewardRequest $request,
         CashbackCampaign $cashbackCampaign
@@ -83,17 +92,17 @@ class RankingRewardController extends Controller
             );
     }
 
+    /**
+     * Formulario para editar premio.
+     */
     public function edit(
         CashbackCampaign $cashbackCampaign,
         RankingReward $rankingReward
     ): View {
 
-        $rewardTypes = RewardType::where(
-            'activo',
-            true
-        )
-            ->orderBy('nombre')
-            ->get();
+        $rewardTypes = $this->getRewardTypes(
+            $cashbackCampaign
+        );
 
         return view(
             'admin.incentivos.ranking_rewards.edit',
@@ -105,6 +114,9 @@ class RankingRewardController extends Controller
         );
     }
 
+    /**
+     * Actualizar premio.
+     */
     public function update(
         UpdateRankingRewardRequest $request,
         CashbackCampaign $cashbackCampaign,
@@ -127,6 +139,9 @@ class RankingRewardController extends Controller
             );
     }
 
+    /**
+     * Eliminar premio.
+     */
     public function destroy(
         CashbackCampaign $cashbackCampaign,
         RankingReward $rankingReward
@@ -145,5 +160,41 @@ class RankingRewardController extends Controller
                 'success',
                 'Premio eliminado correctamente.'
             );
+    }
+
+    /**
+     * Obtener tipos de premio disponibles.
+     *
+     * Cashback:
+     * permite todos los tipos.
+     *
+     * Ranking acumulado:
+     * no permite multiplicador de Cashback.
+     */
+    private function getRewardTypes(
+        CashbackCampaign $cashbackCampaign
+    ) {
+
+        $query = RewardType::query()
+            ->where(
+                'activo',
+                true
+            );
+
+        if (
+            $cashbackCampaign->campaign_type ===
+            'ranking_accumulated'
+        ) {
+
+            $query->where(
+                'codigo',
+                '!=',
+                'cashback_multiplier'
+            );
+        }
+
+        return $query
+            ->orderBy('nombre')
+            ->get();
     }
 }

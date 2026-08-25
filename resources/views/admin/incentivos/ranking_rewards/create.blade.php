@@ -9,21 +9,18 @@
         <div class="mb-8">
 
             <h1 class="text-3xl font-bold">
-
                 Nuevo Premio
-
             </h1>
 
             <p class="mt-2 text-gray-500">
-
                 Campaña:
                 <strong>{{ $cashbackCampaign->nombre }}</strong>
-
             </p>
 
         </div>
 
-        <form method="POST" action="{{ route('cashback-campaigns.ranking-rewards.store', $cashbackCampaign) }}">
+        <form method="POST"
+            action="{{ route('ranking-rewards.store', $cashbackCampaign) }}">
 
             @csrf
 

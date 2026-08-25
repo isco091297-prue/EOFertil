@@ -135,7 +135,9 @@ class CashbackController extends Controller
     {
         try {
             $ranking = $this->campaignUserRankingService
-                ->getMobileRanking($request->user());
+                ->getMobileRanking(
+                    $request->user()->id
+                );
 
             return ApiResponse::success(
                 $ranking,
@@ -149,7 +151,32 @@ class CashbackController extends Controller
             );
         }
     }
+/**
+ * Ranking acumulado vigente para la aplicación móvil.
+ */
+public function accumulatedRanking(Request $request)
+{
+    try {
 
+        $ranking = $this->campaignUserRankingService
+            ->getMobileAccumulatedRanking(
+                $request->user()->id
+            );
+
+        return ApiResponse::success(
+            $ranking,
+            'Ranking acumulado obtenido correctamente.'
+        );
+
+    } catch (Exception $e) {
+
+        return ApiResponse::error(
+            $e->getMessage(),
+            null,
+            500
+        );
+    }
+}
     /**
      * Historial del usuario.
      */
