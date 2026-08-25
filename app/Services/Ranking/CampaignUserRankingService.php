@@ -5,7 +5,9 @@ namespace App\Services\Ranking;
 use App\Models\CampaignUserRanking;
 use App\Models\CashbackCampaign;
 use App\Models\Invoice;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+
 
 class CampaignUserRankingService
 {
@@ -60,35 +62,72 @@ class CampaignUserRankingService
     }
 
     /**
-     * Obtener ranking para la aplicación móvil.
+     * Obtener ranking Cashback para la aplicación móvil.
      *
-     * Este método mantiene separados:
+     * IMPORTANTE:
      *
-     * - Cashback
-     * - Ranking Acumulado
+     * El ranking Cashback es independiente del ranking acumulado.
      *
-     * No genera ni modifica información.
+     * Si la campaña tiene:
+     *
+     *     participant_type = warehouse
+     *
+     * solamente participan los usuarios pertenecientes
+     * al mismo almacén del usuario autenticado.
+     *
+     * Las zonas y sucursales NO separan el ranking.
      */
     public function getMobileRanking(
         ?int $userId = null
     ): array {
 
         /*
-        |--------------------------------------------------------------------------
-        | Buscar campañas vigentes con ranking
-        |--------------------------------------------------------------------------
-        |
-        | Cashback:
-        |   solamente si ranking_enabled = true
-        |
-        | Ranking acumulado:
-        |   siempre tiene ranking
-        |
-        */
+    |--------------------------------------------------------------------------
+    | Usuario actual
+    |--------------------------------------------------------------------------
+    */
+
+        $user = null;
+
+        if ($userId !== null) {
+
+            $user = User::query()
+                ->select([
+                    'id',
+                    'warehouse_id',
+                    'zone_id',
+                    'branch_id',
+                ])
+                ->find($userId);
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Buscar solamente campañas Cashback vigentes
+    |--------------------------------------------------------------------------
+    |
+    | El ranking acumulado tiene su propio endpoint:
+    |
+    |     getMobileAccumulatedRanking()
+    |
+    */
 
         $campaigns = CashbackCampaign::query()
 
-            ->where('activo', true)
+            ->where(
+                'campaign_type',
+                'cashback'
+            )
+
+            ->where(
+                'activo',
+                true
+            )
+
+            ->where(
+                'ranking_enabled',
+                true
+            )
 
             ->whereDate(
                 'fecha_inicio',
@@ -102,30 +141,9 @@ class CampaignUserRankingService
                 now()->toDateString()
             )
 
-            ->where(function ($query) {
-
-                $query
-
-                    ->where(
-                        'campaign_type',
-                        'ranking_accumulated'
-                    )
-
-                    ->orWhere(function ($query) {
-
-                        $query
-                            ->where(
-                                'campaign_type',
-                                'cashback'
-                            )
-                            ->where(
-                                'ranking_enabled',
-                                true
-                            );
-                    });
-            })
-
-            ->orderBy('fecha_fin')
+            ->orderBy(
+                'fecha_fin'
+            )
 
             ->get();
 
@@ -134,20 +152,91 @@ class CampaignUserRankingService
         foreach ($campaigns as $campaign) {
 
             /*
-            |--------------------------------------------------------------------------
-            | Ranking
-            |--------------------------------------------------------------------------
-            */
+        |--------------------------------------------------------------------------
+        | Ranking de la campaña
+        |--------------------------------------------------------------------------
+        */
 
-            $rankings = $this->getRanking(
-                $campaign
-            );
+            $rankingQuery = CampaignUserRanking::query()
+
+                ->with([
+                    'user',
+                    'warehouse',
+                    'zone',
+                    'branch',
+                ])
+
+                ->where(
+                    'cashback_campaign_id',
+                    $campaign->id
+                );
 
             /*
-            |--------------------------------------------------------------------------
-            | Premios
-            |--------------------------------------------------------------------------
-            */
+        |--------------------------------------------------------------------------
+        | PARTICIPANTES
+        |--------------------------------------------------------------------------
+        |
+        | La campaña define cómo participan los usuarios.
+        |
+        | Para:
+        |
+        |     participant_type = warehouse
+        |
+        | usamos el warehouse_id del usuario autenticado.
+        |
+        | Esto permite que:
+        |
+        |     Almacén 2
+        |       ├── Zona 1
+        |       ├── Zona 2
+        |       ├── Sucursal 1
+        |       └── Sucursal 2
+        |
+        | participen juntos.
+        |
+        */
+
+            if (
+                $campaign->participant_type === 'warehouse'
+                && $user?->warehouse_id !== null
+            ) {
+
+                $rankingQuery->where(
+                    'warehouse_id',
+                    $user->warehouse_id
+                );
+            }
+
+            /*
+        |--------------------------------------------------------------------------
+        | Orden del ranking Cashback
+        |--------------------------------------------------------------------------
+        */
+
+            if (
+                $campaign->ranking_type === 'sales'
+            ) {
+
+                $rankingQuery
+                    ->orderByDesc('sales_total')
+                    ->orderByDesc('invoice_count')
+                    ->orderBy('user_id');
+            } else {
+
+                $rankingQuery
+                    ->orderByDesc('cashback_total')
+                    ->orderByDesc('sales_total')
+                    ->orderBy('invoice_count')
+                    ->orderBy('user_id');
+            }
+
+            $rankings = $rankingQuery->get();
+
+            /*
+        |--------------------------------------------------------------------------
+        | Premios
+        |--------------------------------------------------------------------------
+        */
 
             $rewards = $campaign
                 ->rankingRewards()
@@ -156,23 +245,19 @@ class CampaignUserRankingService
                     'activo',
                     true
                 )
-                ->orderBy('posicion')
+                ->orderBy(
+                    'posicion'
+                )
                 ->get();
-
-            /*
-            |--------------------------------------------------------------------------
-            | Crear mapa de premios por posición
-            |--------------------------------------------------------------------------
-            */
 
             $rewardsByPosition = $rewards
                 ->keyBy('posicion');
 
             /*
-            |--------------------------------------------------------------------------
-            | Ranking para móvil
-            |--------------------------------------------------------------------------
-            */
+        |--------------------------------------------------------------------------
+        | Construir ranking para móvil
+        |--------------------------------------------------------------------------
+        */
 
             $rankingData = [];
 
@@ -186,7 +271,8 @@ class CampaignUserRankingService
 
                 $rankingData[] = [
 
-                    'position' => $position,
+                    'position' =>
+                    $position,
 
                     'user_id' =>
                     $ranking->user_id,
@@ -213,12 +299,6 @@ class CampaignUserRankingService
                     'branch_id' =>
                     $ranking->branch_id,
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Valores del ranking
-                    |--------------------------------------------------------------------------
-                    */
-
                     'sales_total' =>
                     (float) $ranking->sales_total,
 
@@ -228,22 +308,10 @@ class CampaignUserRankingService
                     'invoice_count' =>
                     (int) $ranking->invoice_count,
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Identificar al usuario actual
-                    |--------------------------------------------------------------------------
-                    */
-
                     'is_me' =>
                     $userId !== null &&
                         (int) $ranking->user_id ===
                         (int) $userId,
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Premio de esta posición
-                    |--------------------------------------------------------------------------
-                    */
 
                     'reward' => $reward
                         ? [
@@ -287,10 +355,10 @@ class CampaignUserRankingService
             }
 
             /*
-            |--------------------------------------------------------------------------
-            | Mi posición
-            |--------------------------------------------------------------------------
-            */
+        |--------------------------------------------------------------------------
+        | Mi posición
+        |--------------------------------------------------------------------------
+        */
 
             $myRanking = null;
 
@@ -311,38 +379,26 @@ class CampaignUserRankingService
             }
 
             /*
-            |--------------------------------------------------------------------------
-            | Tipo de ranking
-            |--------------------------------------------------------------------------
-            */
+        |--------------------------------------------------------------------------
+        | Tipo de ranking
+        |--------------------------------------------------------------------------
+        */
 
-            if (
-                $campaign->campaign_type ===
-                'ranking_accumulated'
-            ) {
+            $rankingMetric =
+                $campaign->ranking_type === 'sales'
+                ? 'sales'
+                : 'cashback';
 
-                $rankingMetric = 'sales';
-
-                $rankingLabel =
-                    'Mayor valor acumulado';
-            } else {
-
-                $rankingMetric =
-                    $campaign->ranking_type === 'sales'
-                    ? 'sales'
-                    : 'cashback';
-
-                $rankingLabel =
-                    $rankingMetric === 'sales'
-                    ? 'Mayor valor de ventas'
-                    : 'Mayor Cashback';
-            }
+            $rankingLabel =
+                $rankingMetric === 'sales'
+                ? 'Mayor valor de ventas'
+                : 'Mayor Cashback';
 
             /*
-            |--------------------------------------------------------------------------
-            | Resultado de la campaña
-            |--------------------------------------------------------------------------
-            */
+        |--------------------------------------------------------------------------
+        | Resultado
+        |--------------------------------------------------------------------------
+        */
 
             $result[] = [
 
@@ -382,12 +438,6 @@ class CampaignUserRankingService
                         $campaign->fecha_fin
                     )->format('Y-m-d'),
                 ],
-
-                /*
-                |--------------------------------------------------------------------------
-                | Premios
-                |--------------------------------------------------------------------------
-                */
 
                 'rewards' =>
                 $rewards
@@ -432,29 +482,11 @@ class CampaignUserRankingService
                     ->values()
                     ->all(),
 
-                /*
-                |--------------------------------------------------------------------------
-                | Ranking
-                |--------------------------------------------------------------------------
-                */
-
                 'ranking' =>
                 $rankingData,
 
-                /*
-                |--------------------------------------------------------------------------
-                | Mi ranking
-                |--------------------------------------------------------------------------
-                */
-
                 'my_ranking' =>
                 $myRanking,
-
-                /*
-                |--------------------------------------------------------------------------
-                | Total participantes
-                |--------------------------------------------------------------------------
-                */
 
                 'total_participants' =>
                 count($rankingData),
@@ -463,54 +495,54 @@ class CampaignUserRankingService
 
         return $result;
     }
-/**
- * Obtener ranking acumulado para la aplicación móvil.
- *
- * Exclusivo para campañas:
- *
- *     campaign_type = ranking_accumulated
- *
- * No modifica ni consulta el ranking Cashback.
- */
-public function getMobileAccumulatedRanking(
-    ?int $userId = null
-): array {
+    /**
+     * Obtener ranking acumulado para la aplicación móvil.
+     *
+     * Exclusivo para campañas:
+     *
+     *     campaign_type = ranking_accumulated
+     *
+     * No modifica ni consulta el ranking Cashback.
+     */
+    public function getMobileAccumulatedRanking(
+        ?int $userId = null
+    ): array {
 
-    $campaigns = CashbackCampaign::query()
+        $campaigns = CashbackCampaign::query()
 
-        ->where(
-            'campaign_type',
-            'ranking_accumulated'
-        )
+            ->where(
+                'campaign_type',
+                'ranking_accumulated'
+            )
 
-        ->where(
-            'activo',
-            true
-        )
+            ->where(
+                'activo',
+                true
+            )
 
-        ->whereDate(
-            'fecha_inicio',
-            '<=',
-            now()->toDateString()
-        )
+            ->whereDate(
+                'fecha_inicio',
+                '<=',
+                now()->toDateString()
+            )
 
-        ->whereDate(
-            'fecha_fin',
-            '>=',
-            now()->toDateString()
-        )
+            ->whereDate(
+                'fecha_fin',
+                '>=',
+                now()->toDateString()
+            )
 
-        ->orderBy(
-            'fecha_fin'
-        )
+            ->orderBy(
+                'fecha_fin'
+            )
 
-        ->get();
+            ->get();
 
-    $result = [];
+        $result = [];
 
-    foreach ($campaigns as $campaign) {
+        foreach ($campaigns as $campaign) {
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Ranking
         |--------------------------------------------------------------------------
@@ -519,247 +551,129 @@ public function getMobileAccumulatedRanking(
         |
         */
 
-        $rankings = CampaignUserRanking::query()
+            $rankings = CampaignUserRanking::query()
 
-            ->with([
-                'user',
-                'warehouse',
-                'zone',
-                'branch',
-            ])
+                ->with([
+                    'user',
+                    'warehouse',
+                    'zone',
+                    'branch',
+                ])
 
-            ->where(
-                'cashback_campaign_id',
-                $campaign->id
-            )
+                ->where(
+                    'cashback_campaign_id',
+                    $campaign->id
+                )
 
-            ->orderByDesc(
-                'sales_total'
-            )
+                ->orderByDesc(
+                    'sales_total'
+                )
 
-            ->orderByDesc(
-                'invoice_count'
-            )
+                ->orderByDesc(
+                    'invoice_count'
+                )
 
-            ->orderBy(
-                'user_id'
-            )
+                ->orderBy(
+                    'user_id'
+                )
 
-            ->get();
+                ->get();
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Premios
         |--------------------------------------------------------------------------
         */
 
-        $rewards = $campaign
-            ->rankingRewards()
-            ->with('rewardType')
-            ->where(
-                'activo',
-                true
-            )
-            ->orderBy(
-                'posicion'
-            )
-            ->get();
+            $rewards = $campaign
+                ->rankingRewards()
+                ->with('rewardType')
+                ->where(
+                    'activo',
+                    true
+                )
+                ->orderBy(
+                    'posicion'
+                )
+                ->get();
 
-        $rewardsByPosition = $rewards
-            ->keyBy('posicion');
+            $rewardsByPosition = $rewards
+                ->keyBy('posicion');
 
-        /*
+            /*
         |--------------------------------------------------------------------------
         | Construir ranking
         |--------------------------------------------------------------------------
         */
 
-        $rankingData = [];
+            $rankingData = [];
 
-        $position = 1;
+            $position = 1;
 
-        foreach ($rankings as $ranking) {
+            foreach ($rankings as $ranking) {
 
-            $reward = $rewardsByPosition->get(
-                $position
-            );
+                $reward = $rewardsByPosition->get(
+                    $position
+                );
 
-            $rankingData[] = [
+                $rankingData[] = [
 
-                'position' =>
-                $position,
+                    'position' =>
+                    $position,
 
-                'user_id' =>
-                $ranking->user_id,
+                    'user_id' =>
+                    $ranking->user_id,
 
-                'first_name' =>
-                $ranking->user?->first_name,
+                    'first_name' =>
+                    $ranking->user?->first_name,
 
-                'last_name' =>
-                $ranking->user?->last_name,
+                    'last_name' =>
+                    $ranking->user?->last_name,
 
-                'name' =>
-                trim(
-                    ($ranking->user?->first_name ?? '')
-                        . ' '
-                        . ($ranking->user?->last_name ?? '')
-                ),
+                    'name' =>
+                    trim(
+                        ($ranking->user?->first_name ?? '')
+                            . ' '
+                            . ($ranking->user?->last_name ?? '')
+                    ),
 
-                'warehouse_id' =>
-                $ranking->warehouse_id,
+                    'warehouse_id' =>
+                    $ranking->warehouse_id,
 
-                'zone_id' =>
-                $ranking->zone_id,
+                    'zone_id' =>
+                    $ranking->zone_id,
 
-                'branch_id' =>
-                $ranking->branch_id,
+                    'branch_id' =>
+                    $ranking->branch_id,
 
-                /*
+                    /*
                 |--------------------------------------------------------------------------
                 | Datos propios del acumulado
                 |--------------------------------------------------------------------------
                 */
 
-                'sales_total' =>
-                (float) $ranking->sales_total,
+                    'sales_total' =>
+                    (float) $ranking->sales_total,
 
-                'cashback_total' =>
-                (float) $ranking->cashback_total,
+                    'cashback_total' =>
+                    (float) $ranking->cashback_total,
 
-                'invoice_count' =>
-                (int) $ranking->invoice_count,
+                    'invoice_count' =>
+                    (int) $ranking->invoice_count,
 
-                'is_me' =>
-                $userId !== null &&
-                    (int) $ranking->user_id ===
-                    (int) $userId,
+                    'is_me' =>
+                    $userId !== null &&
+                        (int) $ranking->user_id ===
+                        (int) $userId,
 
-                /*
+                    /*
                 |--------------------------------------------------------------------------
                 | Premio
                 |--------------------------------------------------------------------------
                 */
 
-                'reward' => $reward
-                    ? [
-
-                        'id' =>
-                        $reward->id,
-
-                        'position' =>
-                        $reward->posicion,
-
-                        'title' =>
-                        $reward->titulo,
-
-                        'description' =>
-                        $reward->descripcion,
-
-                        'reward_type_id' =>
-                        $reward->reward_type_id,
-
-                        'reward_type' =>
-                        $reward->rewardType?->nombre,
-
-                        'reward_type_code' =>
-                        $reward->rewardType?->codigo,
-
-                        'value' =>
-                        $reward->valor_referencial !== null
-                            ? (float) $reward->valor_referencial
-                            : null,
-
-                        'multiplier' =>
-                        null,
-
-                    ]
-                    : null,
-            ];
-
-            $position++;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Mi posición
-        |--------------------------------------------------------------------------
-        */
-
-        $myRanking = null;
-
-        if ($userId !== null) {
-
-            foreach ($rankingData as $item) {
-
-                if (
-                    (int) $item['user_id'] ===
-                    (int) $userId
-                ) {
-
-                    $myRanking = $item;
-
-                    break;
-                }
-            }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Resultado
-        |--------------------------------------------------------------------------
-        */
-
-        $result[] = [
-
-            'campaign' => [
-
-                'id' =>
-                $campaign->id,
-
-                'nombre' =>
-                $campaign->nombre,
-
-                'descripcion' =>
-                $campaign->descripcion,
-
-                'campaign_type' =>
-                $campaign->campaign_type,
-
-                'ranking_enabled' =>
-                true,
-
-                'ranking_type' =>
-                'sales',
-
-                'ranking_metric' =>
-                'sales',
-
-                'ranking_label' =>
-                'Mayor valor acumulado',
-
-                'fecha_inicio' =>
-                optional(
-                    $campaign->fecha_inicio
-                )->format('Y-m-d'),
-
-                'fecha_fin' =>
-                optional(
-                    $campaign->fecha_fin
-                )->format('Y-m-d'),
-            ],
-
-            /*
-            |--------------------------------------------------------------------------
-            | Premios
-            |--------------------------------------------------------------------------
-            */
-
-            'rewards' =>
-            $rewards
-                ->map(
-                    function ($reward) {
-
-                        return [
+                    'reward' => $reward
+                        ? [
 
                             'id' =>
                             $reward->id,
@@ -789,43 +703,161 @@ public function getMobileAccumulatedRanking(
 
                             'multiplier' =>
                             null,
-                        ];
-                    }
-                )
-                ->values()
-                ->all(),
+
+                        ]
+                        : null,
+                ];
+
+                $position++;
+            }
 
             /*
+        |--------------------------------------------------------------------------
+        | Mi posición
+        |--------------------------------------------------------------------------
+        */
+
+            $myRanking = null;
+
+            if ($userId !== null) {
+
+                foreach ($rankingData as $item) {
+
+                    if (
+                        (int) $item['user_id'] ===
+                        (int) $userId
+                    ) {
+
+                        $myRanking = $item;
+
+                        break;
+                    }
+                }
+            }
+
+            /*
+        |--------------------------------------------------------------------------
+        | Resultado
+        |--------------------------------------------------------------------------
+        */
+
+            $result[] = [
+
+                'campaign' => [
+
+                    'id' =>
+                    $campaign->id,
+
+                    'nombre' =>
+                    $campaign->nombre,
+
+                    'descripcion' =>
+                    $campaign->descripcion,
+
+                    'campaign_type' =>
+                    $campaign->campaign_type,
+
+                    'ranking_enabled' =>
+                    true,
+
+                    'ranking_type' =>
+                    'sales',
+
+                    'ranking_metric' =>
+                    'sales',
+
+                    'ranking_label' =>
+                    'Mayor valor acumulado',
+
+                    'fecha_inicio' =>
+                    optional(
+                        $campaign->fecha_inicio
+                    )->format('Y-m-d'),
+
+                    'fecha_fin' =>
+                    optional(
+                        $campaign->fecha_fin
+                    )->format('Y-m-d'),
+                ],
+
+                /*
+            |--------------------------------------------------------------------------
+            | Premios
+            |--------------------------------------------------------------------------
+            */
+
+                'rewards' =>
+                $rewards
+                    ->map(
+                        function ($reward) {
+
+                            return [
+
+                                'id' =>
+                                $reward->id,
+
+                                'position' =>
+                                $reward->posicion,
+
+                                'title' =>
+                                $reward->titulo,
+
+                                'description' =>
+                                $reward->descripcion,
+
+                                'reward_type_id' =>
+                                $reward->reward_type_id,
+
+                                'reward_type' =>
+                                $reward->rewardType?->nombre,
+
+                                'reward_type_code' =>
+                                $reward->rewardType?->codigo,
+
+                                'value' =>
+                                $reward->valor_referencial !== null
+                                    ? (float) $reward->valor_referencial
+                                    : null,
+
+                                'multiplier' =>
+                                null,
+                            ];
+                        }
+                    )
+                    ->values()
+                    ->all(),
+
+                /*
             |--------------------------------------------------------------------------
             | Ranking
             |--------------------------------------------------------------------------
             */
 
-            'ranking' =>
-            $rankingData,
+                'ranking' =>
+                $rankingData,
 
-            /*
+                /*
             |--------------------------------------------------------------------------
             | Mi ranking
             |--------------------------------------------------------------------------
             */
 
-            'my_ranking' =>
-            $myRanking,
+                'my_ranking' =>
+                $myRanking,
 
-            /*
+                /*
             |--------------------------------------------------------------------------
             | Total participantes
             |--------------------------------------------------------------------------
             */
 
-            'total_participants' =>
-            count($rankingData),
-        ];
-    }
+                'total_participants' =>
+                count($rankingData),
+            ];
+        }
 
-    return $result;
-}
+        return $result;
+    }
     /**
      * Actualizar ranking a partir de una factura.
      */
