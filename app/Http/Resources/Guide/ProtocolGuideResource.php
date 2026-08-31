@@ -105,6 +105,12 @@ class ProtocolGuideResource extends JsonResource
 
                                 ],
 
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Productos recomendados para el ingrediente activo
+                                |--------------------------------------------------------------------------
+                                */
+
                                 'productos' => $ingredient->products->map(function ($item) {
 
                                     return [
@@ -142,6 +148,89 @@ class ProtocolGuideResource extends JsonResource
 
                             ];
                         })->values(),
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Combinaciones de ingredientes activos
+                        |--------------------------------------------------------------------------
+                        */
+
+                        'combinaciones_ingredientes_activos' => $application
+                            ->activeIngredientCombinations
+                            ->map(function ($combination) {
+
+                                return [
+
+                                    'id' => $combination->id,
+
+                                    'dosis' => $combination->dose,
+
+                                    'unidad' => $combination->unit,
+
+                                    'base_aplicacion' => $combination->application_base,
+
+                                    'combinacion' => [
+
+                                        'id' =>
+                                        $combination
+                                            ->activeIngredientCombination
+                                            ?->id,
+
+                                        'nombre' =>
+                                        $combination
+                                            ->activeIngredientCombination
+                                            ?->name,
+
+                                        'descripcion' =>
+                                        $combination
+                                            ->activeIngredientCombination
+                                            ?->description,
+
+                                    ],
+
+                                    /*
+                                    |--------------------------------------------------------------------------
+                                    | Productos asociados a la combinación
+                                    |--------------------------------------------------------------------------
+                                    */
+
+                                    'productos' =>
+                                    $combination
+                                        ->activeIngredientCombination
+                                        ?->products
+                                        ?->map(function ($product) {
+
+                                            return [
+
+                                                'id' => $product->id,
+
+                                                'codigo' => $product->code,
+
+                                                'nombre' => $product->name,
+
+                                                'descripcion' =>
+                                                $product->description,
+
+                                                'marca' =>
+                                                $product->brand?->name,
+
+                                                'categoria' =>
+                                                $product->category?->name,
+
+                                                'image_path' =>
+                                                $product->image_path,
+
+                                                'image_url' =>
+                                                $product->image_url,
+
+                                            ];
+                                        })
+                                        ?->values()
+                                        ?? collect(),
+
+                                ];
+                            })
+                            ->values(),
 
                     ];
                 })->values();

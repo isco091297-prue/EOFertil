@@ -86,6 +86,25 @@ class GuideService
                 'applications.activeIngredients.products.product.brand',
                 'applications.activeIngredients.products.product.category',
 
+                /*
+                |--------------------------------------------------------------------------
+                | Combinaciones de ingredientes activos
+                |--------------------------------------------------------------------------
+                */
+
+                'applications.activeIngredientCombinations',
+                'applications.activeIngredientCombinations.activeIngredientCombination',
+
+                /*
+                |--------------------------------------------------------------------------
+                | Productos asociados a las combinaciones
+                |--------------------------------------------------------------------------
+                */
+
+                'applications.activeIngredientCombinations.activeIngredientCombination.products',
+                'applications.activeIngredientCombinations.activeIngredientCombination.products.brand',
+                'applications.activeIngredientCombinations.activeIngredientCombination.products.category',
+
             ])
 
             ->where('crop_id', $cropId)
