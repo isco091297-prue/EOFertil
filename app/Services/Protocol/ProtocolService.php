@@ -5,6 +5,7 @@ namespace App\Services\Protocol;
 use App\Models\Protocol;
 use App\Models\ProtocolApplication;
 use Illuminate\Support\Facades\DB;
+use App\Models\ProtocolApplicationActiveIngredientCombination;
 
 class ProtocolService
 {
@@ -133,6 +134,16 @@ class ProtocolService
                 $application,
                 $applicationData['active_ingredients'] ?? []
             );
+            /*
+|--------------------------------------------------------------------------
+| Combinaciones de ingredientes activos
+|--------------------------------------------------------------------------
+*/
+
+            $this->syncActiveIngredientCombinations(
+                $application,
+                $applicationData['active_ingredient_combinations'] ?? []
+            );
         }
     }
 
@@ -212,6 +223,32 @@ class ProtocolService
         }
     }
 
+    /**
+     * Crear combinaciones de ingredientes activos
+     * de una aplicación.
+     */
+    private function syncActiveIngredientCombinations(
+        ProtocolApplication $application,
+        array $combinations
+    ): void {
+
+        foreach ($combinations as $combinationData) {
+
+            $application->activeIngredientCombinations()->create([
+                'active_ingredient_combination_id' =>
+                $combinationData['active_ingredient_combination_id'],
+
+                'dose' =>
+                $combinationData['dose'],
+
+                'unit' =>
+                trim($combinationData['unit']),
+
+                'application_base' =>
+                trim($combinationData['application_base']),
+            ]);
+        }
+    }
     /**
      * Generar el código automático del receta.
      */

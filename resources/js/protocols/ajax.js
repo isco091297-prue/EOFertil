@@ -314,3 +314,140 @@ export async function loadActiveIngredientProducts(
     }
 
 }
+/**
+ * Obtener combinaciones de ingredientes activos.
+ */
+export async function loadActiveIngredientCombinations(
+    select,
+    selected = null
+) {
+
+    if (!select) {
+        return;
+    }
+
+    select.innerHTML = `
+        <option value="">
+            Seleccione una combinación
+        </option>
+    `;
+
+    try {
+
+        const response = await fetch(
+            "/protocols/active-ingredient-combinations/search"
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                "No fue posible obtener las combinaciones de ingredientes activos."
+            );
+        }
+
+        const combinations =
+            await response.json();
+
+        combinations.forEach(
+            combination => {
+
+                const option =
+                    document.createElement("option");
+
+                option.value =
+                    combination.id;
+
+                option.textContent =
+                    combination.text;
+
+                if (
+                    selected !== null &&
+                    Number(selected) ===
+                        Number(combination.id)
+                ) {
+                    option.selected = true;
+                }
+
+                select.appendChild(option);
+
+            }
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+/**
+ * Obtener productos vinculados
+ * a una combinación de ingredientes activos.
+ */
+export async function loadActiveIngredientCombinationProducts(
+    select,
+    combinationId,
+    selected = null
+) {
+
+    if (!select) {
+        return;
+    }
+
+    select.innerHTML = `
+        <option value="">
+            Seleccione un producto
+        </option>
+    `;
+
+    if (!combinationId) {
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `/protocols/active-ingredient-combinations/${encodeURIComponent(combinationId)}/products`
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                "No fue posible obtener los productos de la combinación."
+            );
+        }
+
+        const products =
+            await response.json();
+
+        products.forEach(
+            product => {
+
+                const option =
+                    document.createElement("option");
+
+                option.value =
+                    product.id;
+
+                option.textContent =
+                    product.text;
+
+                if (
+                    selected !== null &&
+                    Number(selected) ===
+                        Number(product.id)
+                ) {
+                    option.selected = true;
+                }
+
+                select.appendChild(option);
+
+            }
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}

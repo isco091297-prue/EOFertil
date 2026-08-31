@@ -15,7 +15,9 @@ import {
 import {
     registerActiveIngredientEvents
 } from "./activeIngredient";
-
+import {
+    registerActiveIngredientCombinationEvents
+} from "./activeIngredientCombination";
 /**
  * Obtener datos del receta en edición.
  */
@@ -129,9 +131,11 @@ document.addEventListener(
 
         registerApplicationEvents();
 
-        registerProductEvents();
+registerProductEvents();
 
-        registerActiveIngredientEvents();
+registerActiveIngredientEvents();
+
+registerActiveIngredientCombinationEvents();
 
         /*
         |------------------------------------------------------------------

@@ -105,7 +105,7 @@ class UpdateProtocolRequest extends FormRequest
 
             /*
             |--------------------------------------------------------------------------
-            | Ingredientes activos
+            | Ingredientes activos individuales
             |--------------------------------------------------------------------------
             */
 
@@ -155,6 +155,41 @@ class UpdateProtocolRequest extends FormRequest
                 'string',
                 'max:50',
             ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Combinaciones de ingredientes activos
+            |--------------------------------------------------------------------------
+            */
+
+            'applications.*.active_ingredient_combinations' => [
+                'nullable',
+                'array',
+            ],
+
+            'applications.*.active_ingredient_combinations.*.active_ingredient_combination_id' => [
+                'required',
+                'integer',
+                'exists:active_ingredient_combinations,id',
+            ],
+
+            'applications.*.active_ingredient_combinations.*.dose' => [
+                'required',
+                'numeric',
+                'gt:0',
+            ],
+
+            'applications.*.active_ingredient_combinations.*.unit' => [
+                'required',
+                'string',
+                'max:30',
+            ],
+
+            'applications.*.active_ingredient_combinations.*.application_base' => [
+                'required',
+                'string',
+                'max:50',
+            ],
         ];
     }
 
@@ -164,6 +199,13 @@ class UpdateProtocolRequest extends FormRequest
     public function messages(): array
     {
         return [
+
+            /*
+            |--------------------------------------------------------------------------
+            | Información general
+            |--------------------------------------------------------------------------
+            */
+
             'crop_id.required' =>
             'Debe seleccionar un cultivo.',
 
@@ -175,6 +217,12 @@ class UpdateProtocolRequest extends FormRequest
 
             'problem_id.exists' =>
             'El problema seleccionado no es válido.',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Aplicaciones
+            |--------------------------------------------------------------------------
+            */
 
             'applications.required' =>
             'Debe agregar al menos una aplicación.',
@@ -211,7 +259,7 @@ class UpdateProtocolRequest extends FormRequest
 
             /*
             |--------------------------------------------------------------------------
-            | Ingredientes activos
+            | Ingredientes activos individuales
             |--------------------------------------------------------------------------
             */
 
@@ -221,17 +269,17 @@ class UpdateProtocolRequest extends FormRequest
             'applications.*.active_ingredients.*.active_ingredient_id.exists' =>
             'El ingrediente activo seleccionado no existe.',
 
-            'applications.*.active_ingredients.*.products.required' =>
-            'Debe seleccionar al menos un producto para el ingrediente activo.',
-
-            'applications.*.active_ingredients.*.products.min' =>
-            'Debe seleccionar al menos un producto para el ingrediente activo.',
-
             /*
             |--------------------------------------------------------------------------
             | Productos del ingrediente activo
             |--------------------------------------------------------------------------
             */
+
+            'applications.*.active_ingredients.*.products.required' =>
+            'Debe seleccionar al menos un producto para el ingrediente activo.',
+
+            'applications.*.active_ingredients.*.products.min' =>
+            'Debe seleccionar al menos un producto para el ingrediente activo.',
 
             'applications.*.active_ingredients.*.products.*.product_id.required' =>
             'Debe seleccionar un producto recomendado.',
@@ -250,6 +298,30 @@ class UpdateProtocolRequest extends FormRequest
 
             'applications.*.active_ingredients.*.products.*.application_base.required' =>
             'Debe ingresar la base de aplicación del producto recomendado.',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Combinaciones de ingredientes activos
+            |--------------------------------------------------------------------------
+            */
+
+            'applications.*.active_ingredient_combinations.*.active_ingredient_combination_id.required' =>
+            'Debe seleccionar una combinación de ingredientes activos.',
+
+            'applications.*.active_ingredient_combinations.*.active_ingredient_combination_id.exists' =>
+            'La combinación de ingredientes activos seleccionada no existe.',
+
+            'applications.*.active_ingredient_combinations.*.dose.required' =>
+            'Debe ingresar la dosis de la combinación.',
+
+            'applications.*.active_ingredient_combinations.*.dose.gt' =>
+            'La dosis de la combinación debe ser mayor que cero.',
+
+            'applications.*.active_ingredient_combinations.*.unit.required' =>
+            'Debe ingresar la unidad de la dosis de la combinación.',
+
+            'applications.*.active_ingredient_combinations.*.application_base.required' =>
+            'Debe ingresar la base de aplicación de la combinación.',
         ];
     }
 }

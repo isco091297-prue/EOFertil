@@ -1,5 +1,6 @@
 import { addProduct } from "./product";
 import { addActiveIngredient } from "./activeIngredient";
+import { addActiveIngredientCombination } from "./activeIngredientCombination";
 import { renumberApplications } from "./helpers";
 
 /**
@@ -65,17 +66,13 @@ export async function addApplication(
             );
 
         if (type) {
-
             type.value =
                 applicationData.application_type ?? "";
-
         }
 
         if (description) {
-
             description.value =
                 applicationData.description ?? "";
-
         }
 
     }
@@ -106,11 +103,6 @@ export async function addApplication(
 
     } else {
 
-        /*
-        | Una aplicación nueva comienza con
-        | una fila para producto EOFertil.
-        */
-
         await addProduct(
             applicationCard
         );
@@ -139,6 +131,34 @@ export async function addApplication(
             await addActiveIngredient(
                 applicationCard,
                 activeIngredient
+            );
+
+        }
+
+    }
+
+    /*
+    |----------------------------------------------------------------------
+    | Combinaciones de ingredientes activos
+    |----------------------------------------------------------------------
+    */
+
+    if (
+        applicationData &&
+        Array.isArray(
+            applicationData.active_ingredient_combinations
+        ) &&
+        applicationData.active_ingredient_combinations.length
+    ) {
+
+        for (
+            const combination
+            of applicationData.active_ingredient_combinations
+        ) {
+
+            await addActiveIngredientCombination(
+                applicationCard,
+                combination
             );
 
         }

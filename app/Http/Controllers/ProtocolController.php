@@ -13,7 +13,7 @@ use App\Models\Protocol;
 use App\Models\Brand;
 
 use App\Services\Protocol\ProtocolService;
-
+use App\Models\ActiveIngredientCombination;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -106,6 +106,7 @@ class ProtocolController extends Controller
 
             'applications.activeIngredients.products.product.brand',
             'applications.activeIngredients.products.product.category',
+            'applications.activeIngredientCombinations.activeIngredientCombination',
         ]);
 
         return view(
@@ -421,6 +422,82 @@ class ProtocolController extends Controller
         | Respuesta para el formulario
         |--------------------------------------------------------------
         */
+
+        return response()->json(
+            $products->map(
+                fn($product) => [
+                    'id' => $product->id,
+                    'code' => $product->code,
+                    'name' => $product->name,
+
+                    'brand' =>
+                    $product->brand?->name,
+
+                    'category' =>
+                    $product->category?->name,
+
+                    'text' =>
+                    "{$product->code} - {$product->name}",
+                ]
+            )
+        );
+    }
+    /**
+     * Buscar combinaciones de ingredientes activos.
+     */
+    public function searchActiveIngredientCombinations(
+        Request $request
+    ): JsonResponse {
+
+        $search = trim(
+            $request->get('search', '')
+        );
+
+        $combinations = ActiveIngredientCombination::query()
+            ->where('is_active', true)
+            ->when(
+                $search !== '',
+                function ($query) use ($search) {
+                    $query->where(
+                        'name',
+                        'like',
+                        "%{$search}%"
+                    );
+                }
+            )
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+            ]);
+
+        return response()->json(
+            $combinations->map(
+                fn($combination) => [
+                    'id' => $combination->id,
+                    'text' => $combination->name,
+                ]
+            )
+        );
+    }
+
+    /**
+     * Obtener los productos vinculados
+     * a una combinación de ingredientes activos.
+     */
+    public function activeIngredientCombinationProducts(
+        ActiveIngredientCombination $combination
+    ): JsonResponse {
+
+        $products = $combination
+            ->products()
+            ->where('products.is_active', true)
+            ->with([
+                'brand:id,name',
+                'category:id,name',
+            ])
+            ->orderBy('products.name')
+            ->get();
 
         return response()->json(
             $products->map(

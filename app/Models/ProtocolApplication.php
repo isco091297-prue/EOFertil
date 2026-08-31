@@ -16,7 +16,7 @@ class ProtocolApplication extends Model
     ];
 
     /**
-     * Receta al que pertenece la aplicación.
+     * Receta a la que pertenece la aplicación.
      */
     public function protocol(): BelongsTo
     {
@@ -36,12 +36,24 @@ class ProtocolApplication extends Model
 
     /**
      * Ingredientes activos agregados
-     * a la aplicación.
+     * individualmente a la aplicación.
      */
     public function activeIngredients(): HasMany
     {
         return $this->hasMany(
             ProtocolApplicationActiveIngredient::class,
+            'protocol_application_id'
+        );
+    }
+
+    /**
+     * Combinaciones de ingredientes activos
+     * agregadas a la aplicación.
+     */
+    public function activeIngredientCombinations(): HasMany
+    {
+        return $this->hasMany(
+            ProtocolApplicationActiveIngredientCombination::class,
             'protocol_application_id'
         );
     }

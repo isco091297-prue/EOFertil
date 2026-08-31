@@ -12,8 +12,8 @@
                 </h3>
 
                 <p class="mt-1 text-sm text-gray-500">
-                    Configure los productos EOFertil y los ingredientes activos
-                    que forman parte de esta aplicación.
+                    Configure los productos EOFertil, los ingredientes activos
+                    y las combinaciones que forman parte de esta aplicación.
                 </p>
             </div>
 
@@ -32,7 +32,10 @@
 
         <div class="space-y-8 p-6">
 
-            {{-- Tipo de aplicación --}}
+            {{-- ========================================================= --}}
+            {{-- TIPO DE APLICACIÓN --}}
+            {{-- ========================================================= --}}
+
             <div>
 
                 <label class="mb-2 block text-sm font-medium text-gray-700">
@@ -45,7 +48,10 @@
 
             </div>
 
-            {{-- Descripción --}}
+            {{-- ========================================================= --}}
+            {{-- DESCRIPCIÓN --}}
+            {{-- ========================================================= --}}
+
             <div>
 
                 <label class="mb-2 block text-sm font-medium text-gray-700">
@@ -156,6 +162,39 @@
                 </div>
 
                 <div class="active-ingredients-container space-y-4 p-5">
+                </div>
+
+            </div>
+
+            {{-- ========================================================= --}}
+            {{-- COMBINACIONES DE INGREDIENTES ACTIVOS --}}
+            {{-- ========================================================= --}}
+
+            <div class="rounded-xl border border-purple-200 bg-purple-50/40">
+
+                <div class="flex items-center justify-between border-b border-purple-200 px-5 py-4">
+
+                    <div>
+
+                        <h4 class="font-semibold text-purple-800">
+                            Combinaciones de ingredientes activos
+                        </h4>
+
+                        <p class="mt-1 text-sm text-gray-500">
+                            Agregue combinaciones de ingredientes activos y
+                            configure su dosis y base de aplicación.
+                        </p>
+
+                    </div>
+
+                    <button type="button"
+                        class="btn-add-active-ingredient-combination rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700">
+                        + Agregar Combinación
+                    </button>
+
+                </div>
+
+                <div class="active-ingredient-combinations-container space-y-4 p-5">
                 </div>
 
             </div>

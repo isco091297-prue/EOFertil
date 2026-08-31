@@ -102,6 +102,10 @@ export function renumberApplications() {
                 application,
                 applicationIndex
             );
+            renumberActiveIngredientCombinations(
+    application,
+    applicationIndex
+);
 
         }
     );
@@ -347,6 +351,81 @@ export function renumberActiveIngredientProducts(
 
                 applicationBaseInput.name =
                     `applications[${applicationIndex}][active_ingredients][${activeIngredientIndex}][products][${productIndex}][application_base]`;
+
+            }
+
+        }
+    );
+
+}
+/**
+ * Renumera las combinaciones de ingredientes activos
+ * de una aplicación.
+ */
+export function renumberActiveIngredientCombinations(
+    application,
+    applicationIndex
+) {
+
+    const combinationCards =
+        application.querySelectorAll(
+            ".active-ingredient-combinations-container .active-ingredient-combination-card"
+        );
+
+    combinationCards.forEach(
+        (
+            combinationCard,
+            combinationIndex
+        ) => {
+
+            combinationCard.dataset.index =
+                combinationIndex;
+
+            const combinationSelect =
+                combinationCard.querySelector(
+                    ".active-ingredient-combination-select"
+                );
+
+            if (combinationSelect) {
+
+                combinationSelect.name =
+                    `applications[${applicationIndex}][active_ingredient_combinations][${combinationIndex}][active_ingredient_combination_id]`;
+
+            }
+
+            const doseInput =
+                combinationCard.querySelector(
+                    ".active-ingredient-combination-dose"
+                );
+
+            if (doseInput) {
+
+                doseInput.name =
+                    `applications[${applicationIndex}][active_ingredient_combinations][${combinationIndex}][dose]`;
+
+            }
+
+            const unitInput =
+                combinationCard.querySelector(
+                    ".active-ingredient-combination-unit"
+                );
+
+            if (unitInput) {
+
+                unitInput.name =
+                    `applications[${applicationIndex}][active_ingredient_combinations][${combinationIndex}][unit]`;
+
+            }
+
+            const applicationBaseInput =
+                combinationCard.querySelector(
+                    ".active-ingredient-combination-application-base"
+                );
+
+            if (applicationBaseInput) {
+
+                applicationBaseInput.name =
+                    `applications[${applicationIndex}][active_ingredient_combinations][${combinationIndex}][application_base]`;
 
             }
 

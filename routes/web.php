@@ -54,7 +54,6 @@ Route::middleware([
         'cashback-campaigns/{cashbackCampaign}'
     )->group(function () {
 
-
         Route::get(
             'participants',
             [
@@ -94,6 +93,7 @@ Route::middleware([
         )->name(
             'cashback-campaigns.winners'
         );
+
         Route::patch(
             'winners/{winner}/deliver',
             [
@@ -103,6 +103,7 @@ Route::middleware([
         )->name(
             'cashback-campaigns.winners.deliver'
         );
+
         Route::resource(
             'ranking-rewards',
             RankingRewardController::class
@@ -163,14 +164,22 @@ Route::middleware([
         'active-ingredients',
         ActiveIngredientController::class
     );
+
     Route::resource(
         'active-ingredient-combinations',
         ActiveIngredientCombinationController::class
     );
+
     Route::resource(
         'problems',
         ProblemController::class
     );
+
+    /*
+    |--------------------------------------------------------------------------
+    | AJAX - Protocolos
+    |--------------------------------------------------------------------------
+    */
 
     Route::get(
         'protocols/crops/search',
@@ -222,10 +231,48 @@ Route::middleware([
         'protocols.active-ingredients.products'
     );
 
+    /*
+    |--------------------------------------------------------------------------
+    | AJAX - Combinaciones de ingredientes activos
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        'protocols/active-ingredient-combinations/search',
+        [
+            ProtocolController::class,
+            'searchActiveIngredientCombinations',
+        ]
+    )->name(
+        'protocols.active-ingredient-combinations.search'
+    );
+
+    Route::get(
+        'protocols/active-ingredient-combinations/{combination}/products',
+        [
+            ProtocolController::class,
+            'activeIngredientCombinationProducts',
+        ]
+    )->name(
+        'protocols.active-ingredient-combinations.products'
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Protocolos
+    |--------------------------------------------------------------------------
+    */
+
     Route::resource(
         'protocols',
         ProtocolController::class
     );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Logout
+    |--------------------------------------------------------------------------
+    */
 
     Route::post(
         '/logout',
