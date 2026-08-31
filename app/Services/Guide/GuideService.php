@@ -40,11 +40,15 @@ class GuideService
     ): ?Protocol {
 
         return Protocol::query()
-
             ->with([
 
-                'crop',
+                /*
+                |--------------------------------------------------------------------------
+                | Cultivo y problema
+                |--------------------------------------------------------------------------
+                */
 
+                'crop',
                 'problem',
 
                 /*
@@ -57,7 +61,7 @@ class GuideService
 
                 /*
                 |--------------------------------------------------------------------------
-                | Productos EOFertil
+                | Productos EOFertil directos
                 |--------------------------------------------------------------------------
                 */
 
@@ -77,7 +81,7 @@ class GuideService
 
                 /*
                 |--------------------------------------------------------------------------
-                | Productos recomendados
+                | Productos recomendados para ingredientes activos
                 |--------------------------------------------------------------------------
                 */
 
@@ -93,11 +97,26 @@ class GuideService
                 */
 
                 'applications.activeIngredientCombinations',
+
+                /*
+                |--------------------------------------------------------------------------
+                | Información de la combinación
+                |--------------------------------------------------------------------------
+                */
+
                 'applications.activeIngredientCombinations.activeIngredientCombination',
 
                 /*
                 |--------------------------------------------------------------------------
-                | Productos asociados a las combinaciones
+                | Ingredientes que forman la combinación
+                |--------------------------------------------------------------------------
+                */
+
+                'applications.activeIngredientCombinations.activeIngredientCombination.activeIngredients',
+
+                /*
+                |--------------------------------------------------------------------------
+                | Productos asociados a la combinación
                 |--------------------------------------------------------------------------
                 */
 
@@ -106,13 +125,9 @@ class GuideService
                 'applications.activeIngredientCombinations.activeIngredientCombination.products.category',
 
             ])
-
             ->where('crop_id', $cropId)
-
             ->where('problem_id', $problemId)
-
             ->where('is_active', true)
-
             ->first();
     }
 }

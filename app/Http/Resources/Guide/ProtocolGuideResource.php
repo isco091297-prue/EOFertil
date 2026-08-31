@@ -48,40 +48,47 @@ class ProtocolGuideResource extends JsonResource
                         |--------------------------------------------------------------------------
                         */
 
-                        'productos' => $application->products->map(function ($item) {
+                        'productos' => $application->products
+                            ->map(function ($item) {
 
-                            return [
+                                return [
 
-                                'id' => $item->id,
+                                    'id' => $item->id,
 
-                                'dosis' => $item->dose,
+                                    'dosis' => $item->dose,
 
-                                'unidad' => $item->unit,
+                                    'unidad' => $item->unit,
 
-                                'base_aplicacion' => $item->application_base,
+                                    'base_aplicacion' => $item->application_base,
 
-                                'producto' => [
+                                    'producto' => [
 
-                                    'id' => $item->product?->id,
+                                        'id' => $item->product?->id,
 
-                                    'codigo' => $item->product?->code,
+                                        'codigo' => $item->product?->code,
 
-                                    'nombre' => $item->product?->name,
+                                        'nombre' => $item->product?->name,
 
-                                    'descripcion' => $item->product?->description,
+                                        'descripcion' =>
+                                        $item->product?->description,
 
-                                    'marca' => $item->product?->brand?->name,
+                                        'marca' =>
+                                        $item->product?->brand?->name,
 
-                                    'categoria' => $item->product?->category?->name,
+                                        'categoria' =>
+                                        $item->product?->category?->name,
 
-                                    'image_path' => $item->product?->image_path,
+                                        'image_path' =>
+                                        $item->product?->image_path,
 
-                                    'image_url' => $item->product?->image_url,
+                                        'image_url' =>
+                                        $item->product?->image_url,
 
-                                ],
+                                    ],
 
-                            ];
-                        })->values(),
+                                ];
+                            })
+                            ->values(),
 
                         /*
                         |--------------------------------------------------------------------------
@@ -89,65 +96,86 @@ class ProtocolGuideResource extends JsonResource
                         |--------------------------------------------------------------------------
                         */
 
-                        'ingredientes_activos' => $application->activeIngredients->map(function ($ingredient) {
+                        'ingredientes_activos' => $application
+                            ->activeIngredients
+                            ->map(function ($ingredient) {
 
-                            return [
+                                return [
 
-                                'id' => $ingredient->id,
+                                    'id' => $ingredient->id,
 
-                                'ingrediente_activo' => [
+                                    'ingrediente_activo' => [
 
-                                    'id' => $ingredient->activeIngredient?->id,
+                                        'id' =>
+                                        $ingredient
+                                            ->activeIngredient?->id,
 
-                                    'nombre' => $ingredient->activeIngredient?->name,
+                                        'nombre' =>
+                                        $ingredient
+                                            ->activeIngredient?->name,
 
-                                    'descripcion' => $ingredient->activeIngredient?->description,
+                                        'descripcion' =>
+                                        $ingredient
+                                            ->activeIngredient?->description,
 
-                                ],
+                                    ],
 
-                                /*
-                                |--------------------------------------------------------------------------
-                                | Productos recomendados para el ingrediente activo
-                                |--------------------------------------------------------------------------
-                                */
+                                    /*
+                                    |--------------------------------------------------------------------------
+                                    | Productos recomendados para el ingrediente
+                                    |--------------------------------------------------------------------------
+                                    */
 
-                                'productos' => $ingredient->products->map(function ($item) {
+                                    'productos' => $ingredient
+                                        ->products
+                                        ->map(function ($item) {
 
-                                    return [
+                                            return [
 
-                                        'id' => $item->id,
+                                                'id' => $item->id,
 
-                                        'dosis' => $item->dose,
+                                                'dosis' => $item->dose,
 
-                                        'unidad' => $item->unit,
+                                                'unidad' => $item->unit,
 
-                                        'base_aplicacion' => $item->application_base,
+                                                'base_aplicacion' =>
+                                                $item->application_base,
 
-                                        'producto' => [
+                                                'producto' => [
 
-                                            'id' => $item->product?->id,
+                                                    'id' =>
+                                                    $item->product?->id,
 
-                                            'codigo' => $item->product?->code,
+                                                    'codigo' =>
+                                                    $item->product?->code,
 
-                                            'nombre' => $item->product?->name,
+                                                    'nombre' =>
+                                                    $item->product?->name,
 
-                                            'descripcion' => $item->product?->description,
+                                                    'descripcion' =>
+                                                    $item->product?->description,
 
-                                            'marca' => $item->product?->brand?->name,
+                                                    'marca' =>
+                                                    $item->product?->brand?->name,
 
-                                            'categoria' => $item->product?->category?->name,
+                                                    'categoria' =>
+                                                    $item->product?->category?->name,
 
-                                            'image_path' => $item->product?->image_path,
+                                                    'image_path' =>
+                                                    $item->product?->image_path,
 
-                                            'image_url' => $item->product?->image_url,
+                                                    'image_url' =>
+                                                    $item->product?->image_url,
 
-                                        ],
+                                                ],
 
-                                    ];
-                                })->values(),
+                                            ];
+                                        })
+                                        ->values(),
 
-                            ];
-                        })->values(),
+                                ];
+                            })
+                            ->values(),
 
                         /*
                         |--------------------------------------------------------------------------
@@ -167,61 +195,121 @@ class ProtocolGuideResource extends JsonResource
 
                                     'unidad' => $combination->unit,
 
-                                    'base_aplicacion' => $combination->application_base,
+                                    'base_aplicacion' =>
+                                    $combination->application_base,
+
+                                    /*
+                                    |--------------------------------------------------------------------------
+                                    | Información de la combinación
+                                    |--------------------------------------------------------------------------
+                                    */
 
                                     'combinacion' => [
 
                                         'id' =>
                                         $combination
-                                            ->activeIngredientCombination
-                                            ?->id,
+                                            ->activeIngredientCombination?->id,
 
                                         'nombre' =>
                                         $combination
-                                            ->activeIngredientCombination
-                                            ?->name,
+                                            ->activeIngredientCombination?->name,
 
                                         'descripcion' =>
                                         $combination
-                                            ->activeIngredientCombination
-                                            ?->description,
+                                            ->activeIngredientCombination?->description,
 
                                     ],
 
                                     /*
                                     |--------------------------------------------------------------------------
+                                    | Ingredientes activos que forman la combinación
+                                    |--------------------------------------------------------------------------
+                                    */
+
+                                    'ingredientes_activos' =>
+                                    $combination
+                                        ->activeIngredientCombination
+                                        ?->activeIngredients
+                                        ?->map(function ($ingredient) {
+
+                                            return [
+
+                                                'id' => $ingredient->id,
+
+                                                'nombre' => $ingredient->name,
+
+                                                'descripcion' =>
+                                                $ingredient->description,
+
+                                            ];
+                                        })
+                                        ?->values()
+                                        ?? collect(),
+
+                                    /*
+                                    |--------------------------------------------------------------------------
                                     | Productos asociados a la combinación
                                     |--------------------------------------------------------------------------
+                                    |
+                                    | IMPORTANTE:
+                                    | Flutter espera:
+                                    |
+                                    | {
+                                    |   id,
+                                    |   dosis,
+                                    |   unidad,
+                                    |   base_aplicacion,
+                                    |   producto: {...}
+                                    | }
+                                    |
                                     */
 
                                     'productos' =>
                                     $combination
                                         ->activeIngredientCombination
                                         ?->products
-                                        ?->map(function ($product) {
+                                        ?->map(function ($product) use ($combination) {
 
                                             return [
 
                                                 'id' => $product->id,
 
-                                                'codigo' => $product->code,
+                                                'dosis' =>
+                                                $combination->dose,
 
-                                                'nombre' => $product->name,
+                                                'unidad' =>
+                                                $combination->unit,
 
-                                                'descripcion' =>
-                                                $product->description,
+                                                'base_aplicacion' =>
+                                                $combination->application_base,
 
-                                                'marca' =>
-                                                $product->brand?->name,
+                                                'producto' => [
 
-                                                'categoria' =>
-                                                $product->category?->name,
+                                                    'id' =>
+                                                    $product->id,
 
-                                                'image_path' =>
-                                                $product->image_path,
+                                                    'codigo' =>
+                                                    $product->code,
 
-                                                'image_url' =>
-                                                $product->image_url,
+                                                    'nombre' =>
+                                                    $product->name,
+
+                                                    'descripcion' =>
+                                                    $product->description,
+
+                                                    'marca' =>
+                                                    $product->brand?->name,
+
+                                                    'categoria' =>
+                                                    $product->category?->name,
+
+                                                    'image_path' =>
+                                                    $product->image_path,
+
+                                                    'image_url' =>
+                                                    $product->image_url,
+
+                                                ],
 
                                             ];
                                         })
