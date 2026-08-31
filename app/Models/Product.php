@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
 class Product extends Model
 {
     protected $fillable = [
@@ -54,13 +55,23 @@ class Product extends Model
         return $this->hasMany(InvoiceItem::class);
     }
 
-public function activeIngredients(): BelongsToMany
-{
-    return $this->belongsToMany(
-        ActiveIngredient::class,
-        'active_ingredient_product',
-        'product_id',
-        'active_ingredient_id'
-    )->withTimestamps();
-}
+    public function activeIngredients(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ActiveIngredient::class,
+            'active_ingredient_product',
+            'product_id',
+            'active_ingredient_id'
+        )->withTimestamps();
+    }
+
+    public function activeIngredientCombinations(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ActiveIngredientCombination::class,
+            'active_ingredient_combination_product',
+            'product_id',
+            'active_ingredient_combination_id'
+        )->withTimestamps();
+    }
 }

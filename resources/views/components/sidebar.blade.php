@@ -34,6 +34,8 @@
 
         <x-menu-item route="active-ingredients.index" icon="🧬" label="Ingredientes Activos" />
 
+        <x-menu-item route="active-ingredient-combinations.index" icon="🧬" label="Combinaciones" />
+
         <x-menu-item route="problems.index" icon="⚠️" label="Problemas" />
 
         <x-menu-item route="protocols.index" icon="🧪" label="Recetas" />
@@ -44,7 +46,7 @@
 
         <x-menu-item route="cashback-campaigns.index" icon="💵" label="Campañas Cashback" />
 
-        <x-menu-item route="cashback-campaigns.index" icon="🎁" label="Campañas Cashback" />
+
         <div class="pt-6 pb-2 text-xs uppercase tracking-widest text-green-300 font-bold">
             Comercial
         </div>

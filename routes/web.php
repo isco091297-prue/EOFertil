@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActiveIngredientController;
+use App\Http\Controllers\ActiveIngredientCombinationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BrandController;
@@ -162,7 +163,10 @@ Route::middleware([
         'active-ingredients',
         ActiveIngredientController::class
     );
-
+    Route::resource(
+        'active-ingredient-combinations',
+        ActiveIngredientCombinationController::class
+    );
     Route::resource(
         'problems',
         ProblemController::class
