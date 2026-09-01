@@ -140,6 +140,10 @@ Route::prefix('v1')->group(function () {
             [CashbackController::class, 'ranking']
         );
         Route::get(
+            '/cashback/my-winner',
+            [CashbackController::class, 'myWinner']
+        );
+        Route::get(
             '/ranking-accumulated',
             [CashbackController::class, 'accumulatedRanking']
         );

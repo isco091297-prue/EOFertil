@@ -20,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ->command('cashback:process-ranking')
         ->dailyAt('00:10');
 
+    $schedule
+        ->command('ranking:process-accumulated')
+        ->dailyAt('00:10');
+
 })
     ->withMiddleware(function (Middleware $middleware): void {
 

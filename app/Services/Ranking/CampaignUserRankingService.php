@@ -196,15 +196,60 @@ class CampaignUserRankingService
         |
         */
 
-            if (
-                $campaign->participant_type === 'warehouse'
-                && $user?->warehouse_id !== null
-            ) {
+            if ($user === null) {
+                continue;
+            }
 
-                $rankingQuery->where(
-                    'warehouse_id',
-                    $user->warehouse_id
-                );
+            switch ($campaign->participant_type) {
+
+                case 'warehouse':
+
+                    if ($user->warehouse_id === null) {
+                        continue 2;
+                    }
+
+                    $rankingQuery->where(
+                        'warehouse_id',
+                        $user->warehouse_id
+                    );
+
+                    break;
+
+                case 'zone':
+
+                    if ($user->zone_id === null) {
+                        continue 2;
+                    }
+
+                    $rankingQuery->where(
+                        'zone_id',
+                        $user->zone_id
+                    );
+
+                    break;
+
+                case 'branch':
+
+                    if ($user->branch_id === null) {
+                        continue 2;
+                    }
+
+                    $rankingQuery->where(
+                        'branch_id',
+                        $user->branch_id
+                    );
+
+                    break;
+
+                case 'all':
+
+                    // Todos los participantes de la campaña.
+                    break;
+
+                default:
+
+                    // Tipo de participación desconocido.
+                    continue 2;
             }
 
             /*

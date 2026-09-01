@@ -151,32 +151,148 @@ class CashbackController extends Controller
             );
         }
     }
-/**
- * Ranking acumulado vigente para la aplicación móvil.
- */
-public function accumulatedRanking(Request $request)
-{
-    try {
+    /**
+     * Obtener si el usuario tiene un premio ganado
+     * en una campaña Cashback finalizada.
+     */
+    public function myWinner(Request $request)
+    {
+        try {
 
-        $ranking = $this->campaignUserRankingService
-            ->getMobileAccumulatedRanking(
-                $request->user()->id
+            $winner = \App\Models\CashbackCampaignWinner::query()
+                ->with([
+                    'campaign',
+                    'rewardType',
+                    'rankingReward',
+                ])
+                ->where(
+                    'user_id',
+                    $request->user()->id
+                )
+                ->whereHas(
+                    'campaign',
+                    function ($query) {
+                        $query->where(
+                            'campaign_type',
+                            'cashback'
+                        );
+                    }
+                )
+                ->orderByDesc('processed_at')
+                ->first();
+
+            if (!$winner) {
+                return ApiResponse::success(
+                    null,
+                    'El usuario no tiene premios de campañas Cashback.'
+                );
+            }
+
+            $premioFinal = null;
+            $bono = null;
+
+            if (
+                $winner->reward_multiplier !== null
+            ) {
+
+                $premioFinal =
+                    (float) $winner->cashback_total
+                    *
+                    (float) $winner->reward_multiplier;
+
+                $bono =
+                    $premioFinal
+                    -
+                    (float) $winner->cashback_total;
+            }
+
+            return ApiResponse::success(
+                [
+                    'id' =>
+                    $winner->id,
+
+                    'campaign_id' =>
+                    $winner->cashback_campaign_id,
+
+                    'campaign_name' =>
+                    $winner->campaign?->nombre,
+
+                    'fecha_inicio' =>
+                    $winner->campaign?->fecha_inicio?->toDateString(),
+
+                    'fecha_fin' =>
+                    $winner->campaign?->fecha_fin?->toDateString(),
+
+                    'ranking_position' =>
+                    (int) $winner->ranking_position,
+
+                    'sales_total' =>
+                    (float) $winner->sales_total,
+
+                    'cashback_total' =>
+                    (float) $winner->cashback_total,
+
+                    'reward_title' =>
+                    $winner->reward_title,
+
+                    'reward_value' =>
+                    $winner->reward_value !== null
+                        ? (float) $winner->reward_value
+                        : null,
+
+                    'reward_multiplier' =>
+                    $winner->reward_multiplier !== null
+                        ? (float) $winner->reward_multiplier
+                        : null,
+
+                    'premio_final' =>
+                    $premioFinal,
+
+                    'bono' =>
+                    $bono,
+
+                    'processed_at' =>
+                    $winner->processed_at?->toIso8601String(),
+
+                    'reward_delivered' =>
+                    (bool) $winner->reward_delivered,
+                ],
+                'Premio obtenido correctamente.'
             );
+        } catch (Exception $e) {
 
-        return ApiResponse::success(
-            $ranking,
-            'Ranking acumulado obtenido correctamente.'
-        );
-
-    } catch (Exception $e) {
-
-        return ApiResponse::error(
-            $e->getMessage(),
-            null,
-            500
-        );
+            return ApiResponse::error(
+                'No fue posible consultar el premio del usuario.',
+                null,
+                500
+            );
+        }
     }
-}
+    /**
+     * Ranking acumulado vigente para la aplicación móvil.
+     */
+    public function accumulatedRanking(Request $request)
+    {
+        try {
+
+            $ranking = $this->campaignUserRankingService
+                ->getMobileAccumulatedRanking(
+                    $request->user()->id
+                );
+
+            return ApiResponse::success(
+                $ranking,
+                'Ranking acumulado obtenido correctamente.'
+            );
+        } catch (Exception $e) {
+
+            return ApiResponse::error(
+                $e->getMessage(),
+                null,
+                500
+            );
+        }
+    }
     /**
      * Historial del usuario.
      */
