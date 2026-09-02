@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\GuideController;
 use App\Http\Controllers\Api\V1\CashbackController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\PasswordResetController;
 
 Route::prefix('v1')->group(function () {
 
@@ -21,7 +22,15 @@ Route::prefix('v1')->group(function () {
         '/login',
         [AuthController::class, 'login']
     );
+    Route::post(
+        '/forgot-password',
+        [PasswordResetController::class, 'verify']
+    );
 
+    Route::post(
+        '/reset-password',
+        [PasswordResetController::class, 'reset']
+    );
     Route::post(
         '/register',
         [AuthController::class, 'register']
