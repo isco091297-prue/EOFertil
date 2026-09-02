@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProtocolApplicationActiveIngredientCombination extends Model
 {
@@ -23,6 +24,17 @@ class ProtocolApplicationActiveIngredientCombination extends Model
         return $this->belongsTo(
             ProtocolApplication::class,
             'protocol_application_id'
+        );
+    }
+
+    /**
+     * Combinación de ingredientes activos.
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(
+            ProtocolApplicationActiveIngredientCombinationProduct::class,
+            'protocol_application_active_ingredient_combination_id'
         );
     }
 

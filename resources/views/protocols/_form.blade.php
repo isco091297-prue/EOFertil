@@ -10,6 +10,7 @@
     'applications.activeIngredients.activeIngredient',
     'applications.activeIngredients.products.product',
     'applications.activeIngredientCombinations.activeIngredientCombination',
+    'applications.activeIngredientCombinations.products.product',
 ])) !!}
 </script>
 @endif

@@ -107,6 +107,8 @@ class ProtocolController extends Controller
             'applications.activeIngredients.products.product.brand',
             'applications.activeIngredients.products.product.category',
             'applications.activeIngredientCombinations.activeIngredientCombination',
+            'applications.activeIngredientCombinations.products.product.brand',
+            'applications.activeIngredientCombinations.products.product.category',
         ]);
 
         return view(
@@ -341,7 +343,8 @@ class ProtocolController extends Controller
             $products->map(
                 fn($product) => [
                     'id' => $product->id,
-                    'text' => "{$product->code} - {$product->name}",
+                    'text' =>
+                    $product->name,
                 ]
             )
         );
@@ -437,7 +440,7 @@ class ProtocolController extends Controller
                     $product->category?->name,
 
                     'text' =>
-                    "{$product->code} - {$product->name}",
+                    $product->name,
                 ]
             )
         );
@@ -513,7 +516,7 @@ class ProtocolController extends Controller
                     $product->category?->name,
 
                     'text' =>
-                    "{$product->code} - {$product->name}",
+                    $product->name,
                 ]
             )
         );

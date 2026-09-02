@@ -15,68 +15,66 @@
                     <select
                         class="active-ingredient-combination-select w-full rounded-lg border border-gray-300 bg-white px-3 py-2 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
                         required>
-
                         <option value="">
                             Seleccione una combinación
                         </option>
-
                     </select>
 
                 </div>
 
                 <button type="button"
                     class="btn-remove-active-ingredient-combination rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700">
-
                     Eliminar
-
                 </button>
 
             </div>
+
+            <p class="mt-3 text-sm text-purple-700">
+                Los productos asociados a la combinación se cargarán automáticamente.
+                Configure la dosis de cada producto por separado.
+            </p>
 
         </div>
 
         <div class="p-5">
 
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div class="mb-4">
+                <h5 class="font-semibold text-gray-800">
+                    Productos de la combinación
+                </h5>
+                <p class="mt-1 text-sm text-gray-500">
+                    La dosis, unidad y base de aplicación pertenecen a cada producto.
+                </p>
+            </div>
 
-                {{-- Dosis --}}
-                <div>
+            <div class="overflow-x-auto">
 
-                    <label class="mb-2 block text-sm font-medium text-gray-700">
-                        Dosis
-                    </label>
+                <table class="min-w-full border border-gray-200">
 
-                    <input type="number" min="0.01" step="0.01"
-                        class="active-ingredient-combination-dose w-full rounded-lg border border-gray-300 px-3 py-2 text-center focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
-                        placeholder="0.00" required>
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="border-b px-4 py-3 text-left text-sm font-semibold">
+                                Producto
+                            </th>
+                            <th class="w-32 border-b px-4 py-3 text-center text-sm font-semibold">
+                                Dosis
+                            </th>
+                            <th class="w-36 border-b px-4 py-3 text-center text-sm font-semibold">
+                                Unidad
+                            </th>
+                            <th class="w-44 border-b px-4 py-3 text-center text-sm font-semibold">
+                                Base aplicación
+                            </th>
+                            <th class="w-24 border-b px-4 py-3 text-center text-sm font-semibold">
+                                Acción
+                            </th>
+                        </tr>
+                    </thead>
 
-                </div>
+                    <tbody class="active-ingredient-combination-products-container divide-y divide-gray-200">
+                    </tbody>
 
-                {{-- Unidad --}}
-                <div>
-
-                    <label class="mb-2 block text-sm font-medium text-gray-700">
-                        Unidad
-                    </label>
-
-                    <input type="text" maxlength="30"
-                        class="active-ingredient-combination-unit w-full rounded-lg border border-gray-300 px-3 py-2 text-center focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
-                        placeholder="Ej: cc, gr" required>
-
-                </div>
-
-                {{-- Base --}}
-                <div>
-
-                    <label class="mb-2 block text-sm font-medium text-gray-700">
-                        Base de aplicación
-                    </label>
-
-                    <input type="text" maxlength="50"
-                        class="active-ingredient-combination-application-base w-full rounded-lg border border-gray-300 px-3 py-2 text-center focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
-                        placeholder="Ej: litro, tanque" required>
-
-                </div>
+                </table>
 
             </div>
 

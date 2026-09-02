@@ -123,6 +123,9 @@ class GuideService
                 'applications.activeIngredientCombinations.activeIngredientCombination.products',
                 'applications.activeIngredientCombinations.activeIngredientCombination.products.brand',
                 'applications.activeIngredientCombinations.activeIngredientCombination.products.category',
+                'applications.activeIngredientCombinations.products.product',
+                'applications.activeIngredientCombinations.products.product.brand',
+                'applications.activeIngredientCombinations.products.product.category',
 
             ])
             ->where('crop_id', $cropId)

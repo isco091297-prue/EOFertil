@@ -17,14 +17,28 @@ class ProductController extends Controller
     public function index(Request $request): View
     {
         $search = trim($request->get('search', ''));
+        $brandId = $request->get('brand_id');
+        $categoryId = $request->get('category_id');
 
         $products = Product::with(['brand', 'category'])
 
             ->when($search !== '', function ($query) use ($search) {
 
-                $query->where('code', 'like', "%{$search}%")
-                    ->orWhere('name', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
 
+                    $q->where('code', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%");
+                });
+            })
+
+            ->when($brandId !== null && $brandId !== '', function ($query) use ($brandId) {
+
+                $query->where('brand_id', $brandId);
+            })
+
+            ->when($categoryId !== null && $categoryId !== '', function ($query) use ($categoryId) {
+
+                $query->where('category_id', $categoryId);
             })
 
             ->orderBy('name')
@@ -33,9 +47,26 @@ class ProductController extends Controller
 
             ->withQueryString();
 
-        return view('products.index', compact('products', 'search'));
-    }
+        $brands = Brand::where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
+        $categories = Category::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view(
+            'products.index',
+            compact(
+                'products',
+                'search',
+                'brandId',
+                'categoryId',
+                'brands',
+                'categories'
+            )
+        );
+    }
     public function create(): View
     {
         $brands = Brand::where('is_active', true)
@@ -122,7 +153,6 @@ class ProductController extends Controller
 
                 Storage::disk('public')
                     ->delete($product->image_path);
-
             }
 
             $data['image_path'] = $request->file('image')
@@ -152,7 +182,6 @@ class ProductController extends Controller
 
             Storage::disk('public')
                 ->delete($product->image_path);
-
         }
 
         $product->delete();

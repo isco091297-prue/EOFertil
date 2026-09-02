@@ -63,5 +63,6 @@
     @include('protocols._active_ingredient_product')
 
     @include('protocols._active_ingredient_combination')
+    @include('protocols._active_ingredient_combination_product')
 
 @endsection

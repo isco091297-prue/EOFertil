@@ -234,19 +234,26 @@ class ProtocolService
 
         foreach ($combinations as $combinationData) {
 
-            $application->activeIngredientCombinations()->create([
-                'active_ingredient_combination_id' =>
-                $combinationData['active_ingredient_combination_id'],
+            $protocolCombination =
+                $application->activeIngredientCombinations()->create([
+                    'active_ingredient_combination_id' =>
+                    $combinationData['active_ingredient_combination_id'],
 
-                'dose' =>
-                $combinationData['dose'],
+                    // Legacy fields are kept nullable for backward compatibility.
+                    'dose' => null,
+                    'unit' => null,
+                    'application_base' => null,
+                ]);
 
-                'unit' =>
-                trim($combinationData['unit']),
+            foreach ($combinationData['products'] ?? [] as $productData) {
 
-                'application_base' =>
-                trim($combinationData['application_base']),
-            ]);
+                $protocolCombination->products()->create([
+                    'product_id' => $productData['product_id'],
+                    'dose' => $productData['dose'],
+                    'unit' => trim($productData['unit']),
+                    'application_base' => trim($productData['application_base']),
+                ]);
+            }
         }
     }
     /**

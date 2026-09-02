@@ -435,99 +435,89 @@
                             </h3>
 
                             <p class="mt-1 text-sm text-gray-500">
-                                Combinaciones de ingredientes activos recomendadas para esta aplicación.
+                                Productos de cada combinación y dosis configurada individualmente.
                             </p>
 
                         </div>
 
-                        <div class="overflow-x-auto">
+                        <div class="space-y-5 p-5">
 
-                            <table class="min-w-full">
+                            @forelse ($application->activeIngredientCombinations as $item)
+                                <div class="overflow-hidden rounded-xl border border-purple-100">
 
-                                <thead class="bg-gray-50">
+                                    <div class="bg-purple-50/50 px-4 py-3">
+                                        <div class="font-semibold text-purple-800">
+                                            {{ $item->activeIngredientCombination->name }}
+                                        </div>
 
-                                    <tr>
+                                        @if ($item->activeIngredientCombination->description)
+                                            <div class="mt-1 text-sm text-gray-500">
+                                                {{ $item->activeIngredientCombination->description }}
+                                            </div>
+                                        @endif
+                                    </div>
 
-                                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                                            Combinación
-                                        </th>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                                                        Producto</th>
+                                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                                                        Marca</th>
+                                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                                                        Categoría</th>
+                                                    <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                                                        Dosis</th>
+                                                    <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                                                        Unidad</th>
+                                                    <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                                                        Base de aplicación</th>
+                                                </tr>
+                                            </thead>
 
-                                        <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">
-                                            Dosis
-                                        </th>
+                                            <tbody class="divide-y divide-gray-200">
+                                                @forelse ($item->products as $productItem)
+                                                    <tr>
+                                                        <td class="px-4 py-3 font-medium text-gray-800">
+                                                            {{ $productItem->product?->name ?? 'Producto no disponible' }}
+                                                        </td>
+                                                        <td class="px-4 py-3 text-gray-600">
+                                                            {{ $productItem->product?->brand?->name ?? '—' }}
+                                                        </td>
+                                                        <td class="px-4 py-3 text-gray-600">
+                                                            {{ $productItem->product?->category?->name ?? '—' }}
+                                                        </td>
+                                                        <td class="px-4 py-3 text-center">
+                                                            <span
+                                                                class="inline-flex rounded-lg bg-purple-100 px-3 py-1 font-semibold text-purple-800">
+                                                                {{ $productItem->dose }}
+                                                            </span>
+                                                        </td>
+                                                        <td class="px-4 py-3 text-center text-gray-700">
+                                                            {{ $productItem->unit }}
+                                                        </td>
+                                                        <td class="px-4 py-3 text-center text-gray-700">
+                                                            {{ $productItem->application_base }}
+                                                        </td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="6" class="px-4 py-6 text-center text-gray-500">
+                                                            Esta combinación no tiene productos configurados.
+                                                        </td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
 
-                                        <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">
-                                            Unidad
-                                        </th>
-
-                                        <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">
-                                            Base de aplicación
-                                        </th>
-
-                                    </tr>
-
-                                </thead>
-
-                                <tbody class="divide-y divide-gray-200">
-
-                                    @forelse ($application->activeIngredientCombinations as $item)
-                                        <tr>
-
-                                            <td class="px-4 py-3">
-
-                                                <div class="font-medium text-purple-800">
-                                                    {{ $item->activeIngredientCombination->name }}
-                                                </div>
-
-                                                @if ($item->activeIngredientCombination->description)
-                                                    <div class="text-sm text-gray-500">
-                                                        {{ $item->activeIngredientCombination->description }}
-                                                    </div>
-                                                @endif
-
-                                            </td>
-
-                                            <td class="px-4 py-3 text-center">
-
-                                                <span
-                                                    class="inline-flex rounded-lg bg-purple-100 px-3 py-1 font-semibold text-purple-800">
-
-                                                    {{ $item->dose }}
-
-                                                </span>
-
-                                            </td>
-
-                                            <td class="px-4 py-3 text-center text-gray-700">
-
-                                                {{ $item->unit }}
-
-                                            </td>
-
-                                            <td class="px-4 py-3 text-center text-gray-700">
-
-                                                {{ $item->application_base }}
-
-                                            </td>
-
-                                        </tr>
-
-                                    @empty
-
-                                        <tr>
-
-                                            <td colspan="4" class="px-4 py-6 text-center text-gray-500">
-
-                                                Esta aplicación no tiene combinaciones de ingredientes activos registradas.
-
-                                            </td>
-
-                                        </tr>
-                                    @endforelse
-
-                                </tbody>
-
-                            </table>
+                            @empty
+                                <div class="py-6 text-center text-gray-500">
+                                    Esta aplicación no tiene combinaciones de ingredientes activos registradas.
+                                </div>
+                            @endforelse
 
                         </div>
 

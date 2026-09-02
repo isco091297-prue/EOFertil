@@ -264,57 +264,52 @@ class ProtocolGuideResource extends JsonResource
                                     |
                                     */
 
-                                    'productos' =>
-                                    $combination
-                                        ->activeIngredientCombination
-                                        ?->products
-                                        ?->map(function ($product) use ($combination) {
+                                    'productos' => $combination
+                                        ->products
+                                        ->map(function ($item) {
 
                                             return [
 
-                                                'id' => $product->id,
+                                                'id' => $item->id,
 
-                                                'dosis' =>
-                                                $combination->dose,
+                                                'dosis' => $item->dose,
 
-                                                'unidad' =>
-                                                $combination->unit,
+                                                'unidad' => $item->unit,
 
                                                 'base_aplicacion' =>
-                                                $combination->application_base,
+                                                $item->application_base,
 
                                                 'producto' => [
 
                                                     'id' =>
-                                                    $product->id,
+                                                    $item->product?->id,
 
                                                     'codigo' =>
-                                                    $product->code,
+                                                    $item->product?->code,
 
                                                     'nombre' =>
-                                                    $product->name,
+                                                    $item->product?->name,
 
                                                     'descripcion' =>
-                                                    $product->description,
+                                                    $item->product?->description,
 
                                                     'marca' =>
-                                                    $product->brand?->name,
+                                                    $item->product?->brand?->name,
 
                                                     'categoria' =>
-                                                    $product->category?->name,
+                                                    $item->product?->category?->name,
 
                                                     'image_path' =>
-                                                    $product->image_path,
+                                                    $item->product?->image_path,
 
                                                     'image_url' =>
-                                                    $product->image_url,
+                                                    $item->product?->image_url,
 
                                                 ],
 
                                             ];
                                         })
-                                        ?->values()
-                                        ?? collect(),
+                                        ->values(),
 
                                 ];
                             })

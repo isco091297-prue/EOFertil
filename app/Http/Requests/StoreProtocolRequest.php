@@ -173,19 +173,32 @@ class StoreProtocolRequest extends FormRequest
                 'exists:active_ingredient_combinations,id',
             ],
 
-            'applications.*.active_ingredient_combinations.*.dose' => [
+            'applications.*.active_ingredient_combinations.*.products' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+
+            'applications.*.active_ingredient_combinations.*.products.*.product_id' => [
+                'required',
+                'integer',
+                'distinct',
+                'exists:products,id',
+            ],
+
+            'applications.*.active_ingredient_combinations.*.products.*.dose' => [
                 'required',
                 'numeric',
                 'gt:0',
             ],
 
-            'applications.*.active_ingredient_combinations.*.unit' => [
+            'applications.*.active_ingredient_combinations.*.products.*.unit' => [
                 'required',
                 'string',
                 'max:30',
             ],
 
-            'applications.*.active_ingredient_combinations.*.application_base' => [
+            'applications.*.active_ingredient_combinations.*.products.*.application_base' => [
                 'required',
                 'string',
                 'max:50',
@@ -311,17 +324,29 @@ class StoreProtocolRequest extends FormRequest
             'applications.*.active_ingredient_combinations.*.active_ingredient_combination_id.exists' =>
             'La combinación de ingredientes activos seleccionada no existe.',
 
-            'applications.*.active_ingredient_combinations.*.dose.required' =>
-            'Debe ingresar la dosis de la combinación.',
+            'applications.*.active_ingredient_combinations.*.products.required' =>
+            'Debe seleccionar al menos un producto para la combinación.',
 
-            'applications.*.active_ingredient_combinations.*.dose.gt' =>
-            'La dosis de la combinación debe ser mayor que cero.',
+            'applications.*.active_ingredient_combinations.*.products.min' =>
+            'Debe seleccionar al menos un producto para la combinación.',
 
-            'applications.*.active_ingredient_combinations.*.unit.required' =>
-            'Debe ingresar la unidad de la dosis de la combinación.',
+            'applications.*.active_ingredient_combinations.*.products.*.product_id.required' =>
+            'Debe seleccionar un producto de la combinación.',
 
-            'applications.*.active_ingredient_combinations.*.application_base.required' =>
-            'Debe ingresar la base de aplicación de la combinación.',
+            'applications.*.active_ingredient_combinations.*.products.*.product_id.exists' =>
+            'Uno de los productos de la combinación no existe.',
+
+            'applications.*.active_ingredient_combinations.*.products.*.dose.required' =>
+            'Debe ingresar la dosis del producto de la combinación.',
+
+            'applications.*.active_ingredient_combinations.*.products.*.dose.gt' =>
+            'La dosis del producto de la combinación debe ser mayor que cero.',
+
+            'applications.*.active_ingredient_combinations.*.products.*.unit.required' =>
+            'Debe ingresar la unidad del producto de la combinación.',
+
+            'applications.*.active_ingredient_combinations.*.products.*.application_base.required' =>
+            'Debe ingresar la base de aplicación del producto de la combinación.',
         ];
     }
 }
