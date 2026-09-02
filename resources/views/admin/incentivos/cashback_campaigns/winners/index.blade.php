@@ -63,7 +63,15 @@
                         </th>
 
                         <th class="px-6 py-4 text-right text-sm font-semibold text-gray-700">
-                            Cashback
+                            Cashback base
+                        </th>
+
+                        <th class="px-6 py-4 text-right text-sm font-semibold text-gray-700">
+                            Bonificación
+                        </th>
+
+                        <th class="px-6 py-4 text-right text-sm font-semibold text-gray-700">
+                            Total cashback
                         </th>
 
                         <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">
@@ -161,10 +169,42 @@
                             </td>
 
 
-                            {{-- CASHBACK --}}
-                            <td class="px-6 py-4 text-right font-bold text-green-600">
+                            {{-- CASHBACK BASE --}}
+                            <td class="px-6 py-4 text-right">
 
                                 ${{ number_format((float) $winner->cashback_total, 2) }}
+
+                            </td>
+
+
+                            {{-- BONIFICACIÓN --}}
+                            <td class="px-6 py-4 text-right">
+
+                                @php
+                                    $cashbackBase = (float) $winner->cashback_total;
+
+                                    $multiplicador = (float) ($winner->reward_multiplier ?? 1);
+
+                                    $bonificacion = $multiplicador > 1 ? $cashbackBase * ($multiplicador - 1) : 0;
+
+                                    $totalCashback = $cashbackBase + $bonificacion;
+                                @endphp
+
+                                @if ($bonificacion > 0)
+                                    <span class="font-semibold text-green-600">
+                                        ${{ number_format($bonificacion, 2) }}
+                                    </span>
+                                @else
+                                    $0.00
+                                @endif
+
+                            </td>
+
+
+                            {{-- TOTAL CASHBACK --}}
+                            <td class="px-6 py-4 text-right font-bold text-green-600">
+
+                                ${{ number_format($totalCashback, 2) }}
 
                             </td>
 
@@ -218,7 +258,7 @@
 
                             <tr>
 
-                                <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                                <td colspan="9" class="px-6 py-12 text-center text-gray-500">
 
                                     Todavía no existen ganadores para esta campaña.
 
