@@ -101,16 +101,7 @@ class CampaignUserRankingService
                 ->find($userId);
         }
 
-        /*
-    |--------------------------------------------------------------------------
-    | Buscar solamente campañas Cashback vigentes
-    |--------------------------------------------------------------------------
-    |
-    | El ranking acumulado tiene su propio endpoint:
-    |
-    |     getMobileAccumulatedRanking()
-    |
-    */
+
 
         $campaigns = CashbackCampaign::query()
 
@@ -171,30 +162,6 @@ class CampaignUserRankingService
                     $campaign->id
                 );
 
-            /*
-        |--------------------------------------------------------------------------
-        | PARTICIPANTES
-        |--------------------------------------------------------------------------
-        |
-        | La campaña define cómo participan los usuarios.
-        |
-        | Para:
-        |
-        |     participant_type = warehouse
-        |
-        | usamos el warehouse_id del usuario autenticado.
-        |
-        | Esto permite que:
-        |
-        |     Almacén 2
-        |       ├── Zona 1
-        |       ├── Zona 2
-        |       ├── Sucursal 1
-        |       └── Sucursal 2
-        |
-        | participen juntos.
-        |
-        */
 
             if ($user === null) {
                 continue;
@@ -243,20 +210,13 @@ class CampaignUserRankingService
 
                 case 'all':
 
-                    // Todos los participantes de la campaña.
                     break;
 
                 default:
 
-                    // Tipo de participación desconocido.
                     continue 2;
             }
 
-            /*
-        |--------------------------------------------------------------------------
-        | Orden del ranking Cashback
-        |--------------------------------------------------------------------------
-        */
 
             if (
                 $campaign->ranking_type === 'sales'
@@ -277,11 +237,6 @@ class CampaignUserRankingService
 
             $rankings = $rankingQuery->get();
 
-            /*
-        |--------------------------------------------------------------------------
-        | Premios
-        |--------------------------------------------------------------------------
-        */
 
             $rewards = $campaign
                 ->rankingRewards()
@@ -298,11 +253,6 @@ class CampaignUserRankingService
             $rewardsByPosition = $rewards
                 ->keyBy('posicion');
 
-            /*
-        |--------------------------------------------------------------------------
-        | Construir ranking para móvil
-        |--------------------------------------------------------------------------
-        */
 
             $rankingData = [];
 
@@ -337,6 +287,8 @@ class CampaignUserRankingService
 
                     'warehouse_id' =>
                     $ranking->warehouse_id,
+                    'warehouse_name' =>
+                    $ranking->warehouse?->name,
 
                     'zone_id' =>
                     $ranking->zone_id,
@@ -540,15 +492,8 @@ class CampaignUserRankingService
 
         return $result;
     }
-    /**
-     * Obtener ranking acumulado para la aplicación móvil.
-     *
-     * Exclusivo para campañas:
-     *
-     *     campaign_type = ranking_accumulated
-     *
-     * No modifica ni consulta el ranking Cashback.
-     */
+
+
     public function getMobileAccumulatedRanking(
         ?int $userId = null
     ): array {
@@ -684,7 +629,8 @@ class CampaignUserRankingService
 
                     'warehouse_id' =>
                     $ranking->warehouse_id,
-
+                    'warehouse_name' =>
+                    $ranking->warehouse?->name,
                     'zone_id' =>
                     $ranking->zone_id,
 
@@ -756,11 +702,6 @@ class CampaignUserRankingService
                 $position++;
             }
 
-            /*
-        |--------------------------------------------------------------------------
-        | Mi posición
-        |--------------------------------------------------------------------------
-        */
 
             $myRanking = null;
 
@@ -780,11 +721,6 @@ class CampaignUserRankingService
                 }
             }
 
-            /*
-        |--------------------------------------------------------------------------
-        | Resultado
-        |--------------------------------------------------------------------------
-        */
 
             $result[] = [
 
@@ -903,9 +839,7 @@ class CampaignUserRankingService
 
         return $result;
     }
-    /**
-     * Actualizar ranking a partir de una factura.
-     */
+
     public function updateFromInvoice(
         CashbackCampaign $campaign,
         Invoice $invoice,
@@ -927,11 +861,7 @@ class CampaignUserRankingService
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Ubicación del usuario
-        |--------------------------------------------------------------------------
-        */
+
 
         $warehouseId = $user->warehouse_id;
 
@@ -939,11 +869,6 @@ class CampaignUserRankingService
 
         $branchId = $invoice->branch_id;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Buscar o crear ranking del usuario
-        |--------------------------------------------------------------------------
-        */
 
         $ranking = CampaignUserRanking::query()
             ->firstOrCreate(
@@ -978,11 +903,7 @@ class CampaignUserRankingService
                 ]
             );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Actualizar ubicación
-        |--------------------------------------------------------------------------
-        */
+
 
         $ranking->warehouse_id =
             $warehouseId;
