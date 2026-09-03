@@ -11,8 +11,15 @@ class ProfileController extends Controller
 {
     public function show(Request $request)
     {
+        $user = $request->user()->load([
+            'role',
+            'warehouse',
+            'zone',
+            'branch',
+        ]);
+
         return ApiResponse::success(
-            new UserResource($request->user()),
+            new UserResource($user),
             'Perfil obtenido correctamente.'
         );
     }
