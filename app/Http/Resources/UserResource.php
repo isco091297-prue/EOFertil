@@ -40,8 +40,9 @@ class UserResource extends JsonResource
 
             'last_login' => $this->last_login,
 
-            // Preparado para cuando agreguemos fotos
-            'photo' => null,
+            'photo' => $this->photo
+                ? asset('storage/' . $this->photo)
+                : null,
 
             'role' => new RoleResource($this->whenLoaded('role')),
 

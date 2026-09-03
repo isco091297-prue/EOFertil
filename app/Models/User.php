@@ -47,6 +47,7 @@ class User extends Authenticatable
         'responsibility_accepted',
         'responsibility_accepted_at',
         'last_login',
+        'photo',
         'cashback_total',
         'cashback_claimed',
         'cashback_available',

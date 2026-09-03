@@ -86,6 +86,10 @@ Route::prefix('v1')->group(function () {
             '/profile',
             [ProfileController::class, 'show']
         );
+        Route::post(
+            '/profile/photo',
+            [ProfileController::class, 'updatePhoto']
+        );
 
         /*
         |--------------------------------------------------------------------------
