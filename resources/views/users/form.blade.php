@@ -527,12 +527,20 @@
 
         function toggleSections() {
 
-            const perchero = parseInt(role.value) === 2;
+            const roleId = parseInt(role.value);
 
-            organization.style.display = perchero ? "block" : "none";
+            const isPerchero = roleId === 2;
+            const isGuia = roleId === 3;
 
-            bank.style.display = perchero ? "block" : "none";
+            // Organización:
+            // Perchero y Guía
+            organization.style.display =
+                (isPerchero || isGuia) ? "block" : "none";
 
+            // Datos bancarios:
+            // Solo Perchero
+            bank.style.display =
+                isPerchero ? "block" : "none";
         }
 
         role.addEventListener("change", toggleSections);
@@ -586,8 +594,11 @@
             this.value = this.value.replace(/\D/g, '');
 
         });
+
         const identification = document.getElementById("identification");
-        const identificationMessage = document.getElementById("identification-message");
+
+        const identificationMessage =
+            document.getElementById("identification-message");
 
         identification.addEventListener("input", function() {
 
@@ -599,15 +610,19 @@
 
             } else if (this.value.length < 10) {
 
-                identificationMessage.innerHTML = "❌ La cédula debe tener 10 dígitos.";
+                identificationMessage.innerHTML =
+                    "❌ La cédula debe tener 10 dígitos.";
 
-                identificationMessage.className = "text-red-600 text-sm mt-1";
+                identificationMessage.className =
+                    "text-red-600 text-sm mt-1";
 
             } else {
 
-                identificationMessage.innerHTML = "✅ Cédula válida.";
+                identificationMessage.innerHTML =
+                    "✅ Cédula válida.";
 
-                identificationMessage.className = "text-green-600 text-sm mt-1";
+                identificationMessage.className =
+                    "text-green-600 text-sm mt-1";
 
             }
 
@@ -615,9 +630,11 @@
 
         const password = document.getElementById("password");
 
-        const confirm = document.getElementById("password_confirmation");
+        const confirm =
+            document.getElementById("password_confirmation");
 
-        const message = document.getElementById("password-message");
+        const message =
+            document.getElementById("password-message");
 
         function validatePassword() {
 
@@ -631,22 +648,27 @@
 
             if (password.value.length < 8) {
 
-                message.innerHTML = "❌ La contraseña debe tener mínimo 8 caracteres.";
+                message.innerHTML =
+                    "❌ La contraseña debe tener mínimo 8 caracteres.";
 
-                message.className = "text-red-600 text-sm mt-2 font-semibold";
+                message.className =
+                    "text-red-600 text-sm mt-2 font-semibold";
 
             } else if (password.value === confirm.value) {
 
-                message.innerHTML = "✅ Las contraseñas coinciden.";
+                message.innerHTML =
+                    "✅ Las contraseñas coinciden.";
 
-                message.className = "text-green-600 text-sm mt-2 font-semibold";
+                message.className =
+                    "text-green-600 text-sm mt-2 font-semibold";
 
             } else {
 
-                message.innerHTML = "❌ Las contraseñas no coinciden.";
+                message.innerHTML =
+                    "❌ Las contraseñas no coinciden.";
 
-                message.className = "text-red-600 text-sm mt-2 font-semibold";
-
+                message.className =
+                    "text-red-600 text-sm mt-2 font-semibold";
             }
         }
 

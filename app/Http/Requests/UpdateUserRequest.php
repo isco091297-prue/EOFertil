@@ -16,57 +16,124 @@ class UpdateUserRequest extends FormRequest
     {
         $user = $this->route('user');
 
-        $isPerchero = (int) $this->input('role_id') === 2;
+        $roleId = (int) $this->input('role_id');
+
+        // Perchero = 2
+        $isPerchero = $roleId === 2;
+
+        // Perchero o Guía
+        $needsOrganization = in_array($roleId, [2, 3], true);
+
         return [
 
-            'role_id' => 'required|exists:roles,id',
+            'role_id' => [
+                'required',
+                'exists:roles,id',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | ORGANIZACIÓN
+            |--------------------------------------------------------------------------
+            | Perchero y Guía necesitan:
+            | - Almacén
+            | - Zona
+            | - Sucursal
+            |--------------------------------------------------------------------------
+            */
 
             'warehouse_id' => [
-                Rule::requiredIf($isPerchero),
+                Rule::requiredIf($needsOrganization),
                 'nullable',
                 'exists:warehouses,id',
             ],
 
             'zone_id' => [
-                Rule::requiredIf($isPerchero),
+                Rule::requiredIf($needsOrganization),
                 'nullable',
                 'exists:zones,id',
             ],
 
             'branch_id' => [
-                Rule::requiredIf($isPerchero),
+                Rule::requiredIf($needsOrganization),
                 'nullable',
                 'exists:branches,id',
             ],
 
-            'first_name' => 'required|string|max:100',
+            /*
+            |--------------------------------------------------------------------------
+            | DATOS PERSONALES
+            |--------------------------------------------------------------------------
+            */
 
-            'last_name' => 'required|string|max:100',
+            'first_name' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+
+            'last_name' => [
+                'required',
+                'string',
+                'max:100',
+            ],
 
             'identification' => [
                 'required',
                 'string',
                 'min:10',
                 'max:20',
-                Rule::unique('users', 'identification')->ignore($user->id),
+                Rule::unique('users', 'identification')
+                    ->ignore($user->id),
             ],
 
-            'phone' => 'required|string|max:20',
+            'phone' => [
+                'required',
+                'string',
+                'max:20',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | ACCESO
+            |--------------------------------------------------------------------------
+            */
+
             'username' => [
                 'required',
                 'string',
                 'max:50',
-                Rule::unique('users', 'username')->ignore($user->id),
+                Rule::unique('users', 'username')
+                    ->ignore($user->id),
             ],
 
             'email' => [
                 'nullable',
                 'email',
                 'max:150',
-                Rule::unique('users', 'email')->ignore($user->id),
+                Rule::unique('users', 'email')
+                    ->ignore($user->id),
             ],
 
-            'password' => 'nullable|string|min:8|confirmed',
+            'password' => [
+                'nullable',
+                'string',
+                'min:8',
+                'confirmed',
+            ],
+
+            'is_active' => [
+                'required',
+                'boolean',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | DATOS BANCARIOS
+            |--------------------------------------------------------------------------
+            | SOLO Perchero.
+            |--------------------------------------------------------------------------
+            */
 
             'bank' => [
                 Rule::requiredIf($isPerchero),
@@ -88,8 +155,6 @@ class UpdateUserRequest extends FormRequest
                 'string',
                 'max:50',
             ],
-
-            'is_active' => 'required|boolean',
 
         ];
     }
