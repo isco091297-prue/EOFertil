@@ -28,7 +28,21 @@ class GuideService
             ->where('crop_id', $cropId)
             ->where('is_active', true)
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->map(function ($problem) {
+                return [
+                    'id' => $problem->id,
+                    'code' => $problem->code,
+                    'name' => $problem->name,
+                    'crop_id' => $problem->crop_id,
+                    'image_path' => $problem->image_path,
+                    'image_url' => $problem->image_path
+                        ? url('storage/' . $problem->image_path)
+                        : null,
+                    'description' => $problem->description,
+                    'is_active' => (bool) $problem->is_active,
+                ];
+            });
     }
 
     /**
