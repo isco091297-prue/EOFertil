@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Api\V1;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Password;
 
 class RegisterRequest extends FormRequest
 {
@@ -65,10 +64,18 @@ class RegisterRequest extends FormRequest
             'password' => [
                 'required',
                 'confirmed',
-                Password::min(8)
-                    ->letters()
-                    ->mixedCase()
-                    ->numbers(),
+                function ($attribute, $value, $fail) {
+                    if (
+                        strlen($value) < 8 ||
+                        ! preg_match('/[A-Z]/', $value) ||
+                        ! preg_match('/[a-z]/', $value) ||
+                        ! preg_match('/[0-9]/', $value)
+                    ) {
+                        $fail(
+                            'La contraseña debe tener al menos 8 caracteres, una letra mayúscula, una letra minúscula y un número.'
+                        );
+                    }
+                },
             ],
 
             'privacy_accepted' => [
