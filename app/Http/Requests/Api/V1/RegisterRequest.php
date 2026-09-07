@@ -7,21 +7,14 @@ use Illuminate\Validation\Rules\Password;
 
 class RegisterRequest extends FormRequest
 {
-    /**
-     * Determina si el usuario puede realizar esta petición.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Reglas de validación.
-     */
     public function rules(): array
     {
         return [
-
             'first_name' => [
                 'required',
                 'string',
@@ -40,10 +33,11 @@ class RegisterRequest extends FormRequest
                 'digits:10',
                 'unique:users,identification',
             ],
+
             'phone' => [
                 'required',
                 'numeric',
-                'digits_between:10,13',
+                'digits:10',
             ],
 
             'email' => [
@@ -80,6 +74,11 @@ class RegisterRequest extends FormRequest
             'privacy_accepted' => [
                 'accepted',
             ],
+
+            'responsibility_accepted' => [
+                'accepted',
+            ],
+
             'bank' => [
                 'required',
                 'string',
@@ -96,59 +95,71 @@ class RegisterRequest extends FormRequest
                 'string',
                 'max:50',
             ],
-
         ];
     }
 
-    /**
-     * Mensajes personalizados.
-     */
     public function messages(): array
     {
         return [
-
+            // Nombres
             'first_name.required' => 'Ingrese sus nombres.',
+            'first_name.string' => 'Los nombres no son válidos.',
+            'first_name.max' => 'Los nombres no pueden superar los 100 caracteres.',
 
+            // Apellidos
             'last_name.required' => 'Ingrese sus apellidos.',
+            'last_name.string' => 'Los apellidos no son válidos.',
+            'last_name.max' => 'Los apellidos no pueden superar los 100 caracteres.',
 
+            // Cédula
             'identification.required' => 'Ingrese su cédula.',
-
+            'identification.numeric' => 'La cédula debe contener únicamente números.',
             'identification.digits' => 'La cédula debe contener 10 dígitos.',
-
             'identification.unique' => 'Esta cédula ya está registrada.',
 
+            // Celular
             'phone.required' => 'Ingrese su celular.',
+            'phone.numeric' => 'El celular debe contener únicamente números.',
+            'phone.digits' => 'El celular debe contener 10 dígitos.',
 
+            // Correo
+            'email.email' => 'Ingrese un correo electrónico válido.',
+            'email.max' => 'El correo electrónico no puede superar los 255 caracteres.',
+            'email.unique' => 'Este correo electrónico ya está registrado.',
 
-            'email.email' => 'Ingrese un correo válido.',
-
-            'email.unique' => 'Este correo ya está registrado.',
-
+            // Zona
             'zone_id.required' => 'Seleccione una zona.',
-
             'zone_id.exists' => 'La zona seleccionada no es válida.',
 
+            // Sucursal
             'branch_id.required' => 'Seleccione una sucursal.',
-
             'branch_id.exists' => 'La sucursal seleccionada no es válida.',
 
+            // Almacén
             'warehouse_id.required' => 'Seleccione un almacén.',
-
             'warehouse_id.exists' => 'El almacén seleccionado no es válido.',
 
+            // Contraseña
             'password.required' => 'Ingrese una contraseña.',
-
             'password.confirmed' => 'Las contraseñas no coinciden.',
 
+            // Aceptaciones
             'privacy_accepted.accepted' => 'Debe aceptar la política de privacidad.',
+            'responsibility_accepted.accepted' => 'Debe aceptar el acuerdo de responsabilidad.',
 
-            'bank.required' => 'Seleccione un banco.',
+            // Banco
+            'bank.required' => 'Ingrese el nombre del banco o cooperativa.',
+            'bank.string' => 'El banco o cooperativa no es válido.',
+            'bank.max' => 'El nombre del banco o cooperativa no puede superar los 100 caracteres.',
 
+            // Tipo de cuenta
             'account_type.required' => 'Seleccione el tipo de cuenta.',
-
             'account_type.in' => 'El tipo de cuenta seleccionado no es válido.',
 
+            // Número de cuenta
             'account_number.required' => 'Ingrese el número de cuenta.',
+            'account_number.string' => 'El número de cuenta no es válido.',
+            'account_number.max' => 'El número de cuenta no puede superar los 50 caracteres.',
         ];
     }
 }

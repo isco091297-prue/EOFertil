@@ -119,14 +119,10 @@ class AuthService
     |--------------------------------------------------------------------------
     */
 
-            'privacy_accepted' => true,
-
+            'privacy_accepted' => $data['privacy_accepted'],
             'privacy_accepted_at' => now(),
-
-            'responsibility_accepted' => true,
-
+            'responsibility_accepted' => $data['responsibility_accepted'],
             'responsibility_accepted_at' => now(),
-
         ]);
     }
 }
