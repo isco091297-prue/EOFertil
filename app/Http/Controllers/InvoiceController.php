@@ -120,6 +120,9 @@ class InvoiceController extends Controller
 
     /**
      * Aprobar factura.
+     *
+     * Solamente una factura en estado "procesando"
+     * puede ser aprobada.
      */
     public function approve(
         Request $request,
@@ -161,6 +164,8 @@ class InvoiceController extends Controller
 
     /**
      * Anular factura.
+     *
+     * El motivo es obligatorio.
      */
     public function annul(
         Request $request,
@@ -177,10 +182,24 @@ class InvoiceController extends Controller
 
         try {
 
+            $motivo = trim(
+                (string) $request->input('motivo')
+            );
+
+            if ($motivo === '') {
+
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'motivo' =>
+                        'El motivo de anulación es obligatorio.',
+                    ]);
+            }
+
             $this->invoiceAdminService->annul(
                 invoice: $invoice,
                 adminUserId: (int) $request->user()->id,
-                motivo: $request->input('motivo'),
+                motivo: $motivo,
             );
 
             return redirect()
@@ -201,7 +220,26 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Actualizar factura.
+     * Actualizar / modificar factura.
+     *
+     * IMPORTANTE:
+     *
+     * El administrador SOLO puede modificar:
+     *
+     * - valor de cada producto registrado.
+     * - motivo de la modificación.
+     *
+     * NO puede modificar desde este formulario:
+     *
+     * - número de factura
+     * - fecha de factura
+     * - total de factura
+     * - campaña
+     * - porcentaje de cashback
+     * - total de productos participantes
+     *
+     * Todos esos valores son conservados/calculados
+     * directamente desde la factura almacenada.
      */
     public function update(
         Request $request,
@@ -210,37 +248,16 @@ class InvoiceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Validación
+        | Validar únicamente los datos que realmente puede modificar
         |--------------------------------------------------------------------------
         */
 
         $validated = $request->validate([
-            'numero_factura_original' => [
-                'required',
-                'string',
-                'max:100',
-            ],
-
-            'fecha_factura' => [
-                'required',
-                'date',
-            ],
-
-            'total_factura' => [
-                'required',
-                'numeric',
-                'min:0.01',
-            ],
-
-            'total_productos_participantes' => [
-                'required',
-                'numeric',
-                'min:0',
-            ],
 
             'items' => [
-                'nullable',
+                'required',
                 'array',
+                'min:1',
             ],
 
             'items.*.valor' => [
@@ -256,60 +273,189 @@ class InvoiceController extends Controller
             ],
         ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Validar coherencia del total participante
-        |--------------------------------------------------------------------------
-        */
-
-        $items = $validated['items'] ?? [];
-
-        $totalItems = round(
-            collect($items)
-                ->sum(function ($item) {
-                    return (float) ($item['valor'] ?? 0);
-                }),
-            2
-        );
-
-        $totalParticipantes = round(
-            (float) $validated['total_productos_participantes'],
-            2
-        );
 
         /*
         |--------------------------------------------------------------------------
-        | El total de productos participantes debe coincidir
-        | con la suma de sus productos.
+        | Limpiar motivo
         |--------------------------------------------------------------------------
         */
 
-        if (abs($totalItems - $totalParticipantes) > 0.01) {
+        $motivo = trim(
+            (string) $validated['motivo']
+        );
+
+
+        if ($motivo === '') {
 
             return back()
                 ->withInput()
                 ->withErrors([
-                    'total_productos_participantes' =>
-                    'El total de productos participantes ($'
-                        . number_format($totalItems, 2)
-                        . ') debe coincidir con la suma de los productos registrados.',
+                    'motivo' =>
+                    'El motivo de la modificación es obligatorio.',
                 ]);
         }
 
+
         /*
         |--------------------------------------------------------------------------
-        | Ejecutar modificación
+        | Validar que los items enviados pertenezcan a esta factura
+        |--------------------------------------------------------------------------
+        |
+        | Esto es MUY importante.
+        |
+        | No permitimos que alguien intente enviar:
+        |
+        | items[999][valor] = 500
+        |
+        | perteneciendo el item 999 a otra factura.
+        |
+        */
+
+        $invoiceItemIds = $invoice->items()
+            ->pluck('id')
+            ->map(
+                fn($id) => (int) $id
+            )
+            ->values();
+
+
+        $submittedItemIds = collect(
+            array_keys(
+                $validated['items']
+            )
+        )
+            ->map(
+                fn($id) => (int) $id
+            )
+            ->values();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Todos los items enviados deben pertenecer a la factura
+        |--------------------------------------------------------------------------
+        */
+
+        $invalidItemIds = $submittedItemIds
+            ->diff($invoiceItemIds);
+
+
+        if ($invalidItemIds->isNotEmpty()) {
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'items' =>
+                    'Se detectaron productos que no pertenecen a esta factura.',
+                ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | El formulario debe contener todos los productos registrados
+        |--------------------------------------------------------------------------
+        |
+        | Esto evita que alguien elimine silenciosamente un producto
+        | omitiéndolo de la petición.
+        |
+        */
+
+        $missingItemIds = $invoiceItemIds
+            ->diff($submittedItemIds);
+
+
+        if ($missingItemIds->isNotEmpty()) {
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'items' =>
+                    'Debes mantener todos los productos registrados en la factura.',
+                ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Construir los datos que realmente recibirá el servicio
+        |--------------------------------------------------------------------------
+        |
+        | MUY IMPORTANTE:
+        |
+        | NO tomamos del Request:
+        |
+        | numero_factura_original
+        | fecha_factura
+        | total_factura
+        | total_productos_participantes
+        |
+        | Esos valores salen directamente de la factura almacenada.
+        |
+        */
+
+        $data = [
+
+            /*
+            |--------------------------------------------------------------------------
+            | Número original
+            |--------------------------------------------------------------------------
+            */
+
+            'numero_factura_original' =>
+            $invoice->numero_factura_original,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Fecha original
+            |--------------------------------------------------------------------------
+            */
+
+            'fecha_factura' =>
+            optional(
+                $invoice->fecha_factura
+            )->format('Y-m-d'),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Total original de factura
+            |--------------------------------------------------------------------------
+            */
+
+            'total_factura' =>
+            (float) $invoice->total_factura,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Productos modificados
+            |--------------------------------------------------------------------------
+            */
+
+            'items' =>
+            $validated['items'],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Motivo
+            |--------------------------------------------------------------------------
+            */
+
+            'motivo' =>
+            $motivo,
+        ];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ejecutar modificación administrativa
         |--------------------------------------------------------------------------
         */
 
         try {
 
-            $validated['motivo'] =
-                trim($validated['motivo']);
-
             $this->invoiceAdminService->update(
                 invoice: $invoice,
-                data: $validated,
+                data: $data,
                 adminUserId: (int) $request->user()->id,
             );
 
@@ -317,7 +463,7 @@ class InvoiceController extends Controller
                 ->route('invoices.show', $invoice)
                 ->with(
                     'success',
-                    'La factura fue modificada correctamente. El cashback y el acumulado fueron recalculados.'
+                    'La factura fue modificada correctamente. El cashback fue recalculado utilizando la campaña asociada a esta factura.'
                 );
         } catch (RuntimeException $e) {
 

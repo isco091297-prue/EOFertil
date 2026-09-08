@@ -2,6 +2,10 @@
 
 @section('content')
 
+    {{-- ============================================================
+         MENSAJES
+    ============================================================ --}}
+
     @if (session('success'))
         <div class="mb-6 rounded-xl bg-green-100 border border-green-300 text-green-700 p-4">
             {{ session('success') }}
@@ -31,7 +35,9 @@
                         ← Ventas
                     </a>
 
-                    <span class="text-gray-300">/</span>
+                    <span class="text-gray-300">
+                        /
+                    </span>
 
                     <span class="text-gray-600">
                         Factura #{{ $invoice->numero_factura_original }}
@@ -39,9 +45,11 @@
 
                 </div>
 
+
                 <h1 class="text-3xl font-bold mt-3">
                     Factura {{ $invoice->numero_factura_original }}
                 </h1>
+
 
                 <p class="text-gray-500 mt-1">
                     Detalle y revisión de la venta registrada.
@@ -50,7 +58,9 @@
             </div>
 
 
-            {{-- ESTADO --}}
+            {{-- ========================================================
+                 ESTADO
+            ========================================================= --}}
 
             <div>
 
@@ -77,6 +87,7 @@
         </div>
 
 
+
         {{-- ============================================================
              INFORMACIÓN GENERAL
         ============================================================ --}}
@@ -89,6 +100,9 @@
 
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+
+                {{-- Número --}}
 
                 <div>
 
@@ -103,6 +117,8 @@
                 </div>
 
 
+                {{-- Fecha factura --}}
+
                 <div>
 
                     <p class="text-sm text-gray-500">
@@ -116,6 +132,8 @@
                 </div>
 
 
+                {{-- Fecha registro --}}
+
                 <div>
 
                     <p class="text-sm text-gray-500">
@@ -128,6 +146,8 @@
 
                 </div>
 
+
+                {{-- Origen --}}
 
                 <div>
 
@@ -146,11 +166,17 @@
         </x-card>
 
 
+
         {{-- ============================================================
              PERCHERO / SUCURSAL
         ============================================================ --}}
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+
+            {{-- ========================================================
+                 PERCHERO
+            ========================================================= --}}
 
             <x-card>
 
@@ -160,6 +186,7 @@
 
 
                 <div class="space-y-4">
+
 
                     <div>
 
@@ -205,14 +232,20 @@
             </x-card>
 
 
+
+            {{-- ========================================================
+                 SUCURSAL / CAMPAÑA
+            ========================================================= --}}
+
             <x-card>
 
                 <h2 class="text-xl font-bold mb-6">
-                    Sucursal
+                    Información comercial
                 </h2>
 
 
                 <div class="space-y-4">
+
 
                     <div>
 
@@ -230,7 +263,7 @@
                     <div>
 
                         <p class="text-sm text-gray-500">
-                            Campaña
+                            Campaña aplicada
                         </p>
 
                         <p class="font-semibold mt-1">
@@ -239,11 +272,27 @@
 
                     </div>
 
+
+                    @if ($invoice->cashbackCampaign)
+                        <div>
+
+                            <p class="text-sm text-gray-500">
+                                Porcentaje de cashback
+                            </p>
+
+                            <p class="font-semibold mt-1">
+                                {{ number_format((float) $invoice->cashbackCampaign->porcentaje, 2) }}%
+                            </p>
+
+                        </div>
+                    @endif
+
                 </div>
 
             </x-card>
 
         </div>
+
 
 
         {{-- ============================================================
@@ -259,7 +308,10 @@
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                <div class="rounded-xl bg-gray-50 p-5">
+
+                {{-- Total factura --}}
+
+                <div class="rounded-xl bg-gray-50 border border-gray-200 p-5">
 
                     <p class="text-sm text-gray-500">
                         Total de factura
@@ -272,7 +324,9 @@
                 </div>
 
 
-                <div class="rounded-xl bg-gray-50 p-5">
+                {{-- Productos participantes --}}
+
+                <div class="rounded-xl bg-gray-50 border border-gray-200 p-5">
 
                     <p class="text-sm text-gray-500">
                         Productos participantes
@@ -285,17 +339,19 @@
                 </div>
 
 
-                <div class="rounded-xl bg-gray-50 p-5">
+                {{-- Cashback --}}
 
-                    <p class="text-sm text-gray-500">
-                        Cashback generado
+                <div class="rounded-xl bg-green-50 border border-green-200 p-5">
+
+                    <p class="text-sm text-green-700">
+                        Cashback
                     </p>
 
-                    <p class="text-2xl font-bold mt-2">
+                    <p class="text-2xl font-bold mt-2 text-green-800">
                         ${{ number_format((float) $invoice->cashback_generado, 2) }}
                     </p>
 
-                    <p class="text-sm text-gray-500 mt-1">
+                    <p class="text-sm text-green-700 mt-1">
                         {{ number_format((float) $invoice->porcentaje_cashback, 2) }}%
                     </p>
 
@@ -303,7 +359,54 @@
 
             </div>
 
+
+            {{-- ========================================================
+                 EXPLICACIÓN SI ESTÁ PENDIENTE
+            ========================================================= --}}
+
+            @if ($invoice->estado === 'procesando')
+                <div class="mt-5 rounded-xl bg-yellow-50 border border-yellow-200 p-4">
+
+                    <p class="text-sm text-yellow-800">
+
+                        <strong>Pendiente de revisión:</strong>
+                        el cashback mostrado corresponde al cálculo realizado
+                        con la campaña asociada a esta factura.
+                        Todavía no se acredita al saldo del perchero hasta que
+                        la factura sea aprobada.
+
+                    </p>
+
+                </div>
+            @elseif ($invoice->estado === 'confirmada')
+                <div class="mt-5 rounded-xl bg-green-50 border border-green-200 p-4">
+
+                    <p class="text-sm text-green-800">
+
+                        <strong>Factura aprobada:</strong>
+                        el cashback correspondiente a esta factura ya fue
+                        procesado y forma parte de los valores válidos para
+                        acumulado y ranking.
+
+                    </p>
+
+                </div>
+            @elseif ($invoice->estado === 'anulada')
+                <div class="mt-5 rounded-xl bg-red-50 border border-red-200 p-4">
+
+                    <p class="text-sm text-red-800">
+
+                        <strong>Factura anulada:</strong>
+                        esta factura no participa en el cashback ni en los
+                        valores acumulados o ranking.
+
+                    </p>
+
+                </div>
+            @endif
+
         </x-card>
+
 
 
         {{-- ============================================================
@@ -312,7 +415,7 @@
 
         <x-card>
 
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
 
                 <div>
 
@@ -326,7 +429,8 @@
 
                 </div>
 
-                <span class="text-sm text-gray-500">
+
+                <span class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-600">
                     {{ $invoice->items->count() }} producto(s)
                 </span>
 
@@ -345,7 +449,7 @@
                                 Producto
                             </th>
 
-                            <th class="py-3 text-left">
+                            <th class="py-3 text-right">
                                 Valor
                             </th>
 
@@ -362,7 +466,9 @@
                                 <td class="py-4">
 
                                     <div class="font-semibold">
-                                        {{ $item->product?->name ?? 'Producto eliminado' }} </div>
+                                        {{ $item->product?->name ?? 'Producto eliminado' }}
+                                    </div>
+
 
                                     @if ($item->product)
                                         <div class="text-sm text-gray-500">
@@ -373,7 +479,7 @@
                                 </td>
 
 
-                                <td class="py-4 font-semibold">
+                                <td class="py-4 text-right font-semibold">
 
                                     ${{ number_format((float) $item->valor, 2) }}
 
@@ -401,10 +507,10 @@
                             <tr>
 
                                 <td class="py-4 font-bold">
-                                    Total
+                                    Total productos participantes
                                 </td>
 
-                                <td class="py-4 font-bold">
+                                <td class="py-4 text-right font-bold">
                                     ${{ number_format((float) $invoice->items->sum('valor'), 2) }}
                                 </td>
 
@@ -418,6 +524,7 @@
             </div>
 
         </x-card>
+
 
 
         {{-- ============================================================
@@ -444,6 +551,7 @@
 
                 </div>
 
+
                 <p class="text-center text-sm text-gray-500 mt-4">
                     Haz clic en la imagen para abrir el comprobante completo.
                 </p>
@@ -454,6 +562,7 @@
             @endif
 
         </x-card>
+
 
 
         {{-- ============================================================
@@ -484,11 +593,11 @@
                                     Movimiento
                                 </th>
 
-                                <th class="py-3 text-left">
+                                <th class="py-3 text-right">
                                     Valor
                                 </th>
 
-                                <th class="py-3 text-left">
+                                <th class="py-3 text-right">
                                     Saldo después
                                 </th>
 
@@ -514,6 +623,7 @@
                                         {{ ucfirst($transaction->tipo) }}
                                     </td>
 
+
                                     <td class="py-4">
 
                                         @if ($transaction->movimiento === 'ingreso')
@@ -528,20 +638,32 @@
 
                                     </td>
 
-                                    <td class="py-4 font-semibold">
+
+                                    <td class="py-4 text-right font-semibold">
+
                                         ${{ number_format((float) $transaction->valor, 2) }}
+
                                     </td>
 
-                                    <td class="py-4">
+
+                                    <td class="py-4 text-right">
+
                                         ${{ number_format((float) $transaction->saldo_despues, 2) }}
+
                                     </td>
 
+
                                     <td class="py-4">
+
                                         {{ $transaction->descripcion }}
+
                                     </td>
 
-                                    <td class="py-4">
+
+                                    <td class="py-4 whitespace-nowrap">
+
                                         {{ optional($transaction->created_at)->format('d/m/Y H:i') }}
+
                                     </td>
 
                                 </tr>
@@ -556,57 +678,69 @@
             </x-card>
         @endif
 
+
+
         {{-- ============================================================
-     ADMINISTRACIÓN
-============================================================ --}}
+             ADMINISTRACIÓN
+        ============================================================ --}}
 
-        <div class="mt-8">
+        <x-card>
 
-            <h2 class="text-xl font-bold">
-                Administración
-            </h2>
+            <div>
 
-            @if ($invoice->estado === 'procesando')
-                <p class="text-gray-500 mt-2">
-                    Esta factura está pendiente de revisión. Selecciona una
-                    de las acciones disponibles para determinar su estado.
-                </p>
-
-                <div class="flex flex-wrap gap-3 mt-5">
-
-                    {{-- ====================================================
-                 APROBAR
-            ==================================================== --}}
-
-                    <form method="POST" action="{{ route('invoices.approve', $invoice) }}"
-                        onsubmit="return confirm('¿Estás seguro de aprobar esta factura? Una vez aprobada, se considerará correcta y se acreditará el cashback correspondiente.');">
-
-                        @csrf
-
-                        <button type="submit"
-                            class="px-5 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold">
-                            ✓ Aprobar factura
-                        </button>
-
-                    </form>
+                <h2 class="text-xl font-bold">
+                    Administración
+                </h2>
 
 
-                    {{-- ====================================================
-                 MODIFICAR
-            ==================================================== --}}
+                {{-- ====================================================
+                     FACTURA PENDIENTE
+                ==================================================== --}}
 
-                    <a href="{{ route('invoices.edit', $invoice) }}"
-                        class="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold">
-                        ✎ Modificar factura
-                    </a>
+                @if ($invoice->estado === 'procesando')
+                    <p class="text-gray-500 mt-2">
+                        Esta factura está pendiente de revisión.
+                        Puedes aprobarla si la información es correcta,
+                        modificar los valores si existe un error,
+                        o anularla si no cumple las condiciones.
+                    </p>
 
-                    {{-- ====================================================
-     ANULAR
-==================================================== --}}
 
-                    <div>
+                    <div class="flex flex-wrap gap-3 mt-5">
 
-                        <button type="button" onclick="document.getElementById('annul-modal').classList.remove('hidden')"
+
+                        {{-- ==================================================
+                             APROBAR
+                        ================================================== --}}
+
+                        <form method="POST" action="{{ route('invoices.approve', $invoice) }}"
+                            onsubmit="return confirm('¿Estás seguro de aprobar esta factura? Se acreditará el cashback correspondiente y la factura pasará a estado aprobada.');">
+
+                            @csrf
+
+                            <button type="submit"
+                                class="px-5 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold">
+                                ✓ Aprobar factura
+                            </button>
+
+                        </form>
+
+
+                        {{-- ==================================================
+                             MODIFICAR
+                        ================================================== --}}
+
+                        <a href="{{ route('invoices.edit', $invoice) }}"
+                            class="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                            ✎ Modificar factura
+                        </a>
+
+
+                        {{-- ==================================================
+                             ANULAR
+                        ================================================== --}}
+
+                        <button type="button" onclick="openAnnulModal()"
                             class="px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold">
                             ✕ Anular factura
                         </button>
@@ -615,8 +749,117 @@
 
 
                     {{-- ====================================================
-     MODAL DE ANULACIÓN
-==================================================== --}}
+                         MODAL ANULACIÓN
+                    ==================================================== --}}
+
+                    <div id="annul-modal"
+                        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+
+                        <div class="w-full max-w-lg rounded-2xl bg-white shadow-2xl p-6">
+
+
+                            <div class="flex items-center justify-between mb-5">
+
+                                <h3 class="text-xl font-bold text-gray-900">
+                                    Anular factura
+                                </h3>
+
+
+                                <button type="button" onclick="closeAnnulModal()"
+                                    class="text-gray-400 hover:text-gray-700 text-2xl">
+                                    ×
+                                </button>
+
+                            </div>
+
+
+                            <p class="text-sm text-gray-600 mb-5">
+                                Esta acción anulará la factura.
+                                Al anularla, dejará de participar en cashback,
+                                acumulado y ranking.
+                            </p>
+
+
+                            <form method="POST" action="{{ route('invoices.annul', $invoice) }}">
+
+                                @csrf
+
+
+                                <label for="motivo-anulacion" class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Motivo de la anulación
+                                </label>
+
+
+                                <textarea id="motivo-anulacion" name="motivo" rows="4" required maxlength="1000"
+                                    placeholder="Indica por qué esta factura no cumple con las condiciones requeridas."
+                                    class="w-full rounded-xl border-gray-300 focus:border-red-500 focus:ring-red-500"></textarea>
+
+
+                                <div class="flex justify-end gap-3 mt-5">
+
+
+                                    <button type="button" onclick="closeAnnulModal()"
+                                        class="px-5 py-3 rounded-xl border border-gray-300 hover:bg-gray-50">
+                                        Cancelar
+                                    </button>
+
+
+                                    <button type="submit"
+                                        class="px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold"
+                                        onclick="return confirm('¿Estás seguro de anular esta factura? Esta acción afectará el cashback y el acumulado/ranking si corresponde.');">
+                                        Confirmar anulación
+                                    </button>
+
+                                </div>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+
+
+                    {{-- ====================================================
+                     FACTURA CONFIRMADA
+                ==================================================== --}}
+                @elseif ($invoice->estado === 'confirmada')
+                    <p class="text-gray-500 mt-2">
+                        Esta factura ya fue aprobada.
+                        Puedes realizar una corrección administrativa
+                        si detectas un valor incorrecto o anularla si
+                        posteriormente se determina que no cumple las reglas.
+                    </p>
+
+
+                    <div class="flex flex-wrap gap-3 mt-5">
+
+
+                        {{-- ==================================================
+                             MODIFICAR
+                        ================================================== --}}
+
+                        <a href="{{ route('invoices.edit', $invoice) }}"
+                            class="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                            ✎ Modificar factura
+                        </a>
+
+
+                        {{-- ==================================================
+                             ANULAR
+                        ================================================== --}}
+
+                        <button type="button" onclick="openAnnulModal()"
+                            class="px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold">
+                            ✕ Anular factura
+                        </button>
+
+                    </div>
+
+
+                    {{-- ====================================================
+                         MODAL ANULACIÓN CONFIRMADA
+                    ==================================================== --}}
 
                     <div id="annul-modal"
                         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -629,8 +872,8 @@
                                     Anular factura
                                 </h3>
 
-                                <button type="button"
-                                    onclick="document.getElementById('annul-modal').classList.add('hidden')"
+
+                                <button type="button" onclick="closeAnnulModal()"
                                     class="text-gray-400 hover:text-gray-700 text-2xl">
                                     ×
                                 </button>
@@ -639,8 +882,10 @@
 
 
                             <p class="text-sm text-gray-600 mb-5">
-                                Esta acción anulará la factura y hará que deje de participar
-                                en el cashback y en los valores acumulados/ranking.
+                                Esta factura ya fue aprobada.
+                                Al anularla, el sistema revertirá los efectos
+                                financieros correspondientes y la eliminará
+                                del acumulado/ranking.
                             </p>
 
 
@@ -648,26 +893,29 @@
 
                                 @csrf
 
-                                <label for="motivo" class="block text-sm font-semibold text-gray-700 mb-2">
+
+                                <label for="motivo-anulacion-confirmada"
+                                    class="block text-sm font-semibold text-gray-700 mb-2">
                                     Motivo de la anulación
                                 </label>
 
-                                <textarea id="motivo" name="motivo" rows="4" required maxlength="1000"
-                                    placeholder="Indica por qué esta factura no cumple con las condiciones requeridas."
+
+                                <textarea id="motivo-anulacion-confirmada" name="motivo" rows="4" required maxlength="1000"
+                                    placeholder="Indica por qué esta factura debe ser anulada."
                                     class="w-full rounded-xl border-gray-300 focus:border-red-500 focus:ring-red-500"></textarea>
 
 
                                 <div class="flex justify-end gap-3 mt-5">
 
-                                    <button type="button"
-                                        onclick="document.getElementById('annul-modal').classList.add('hidden')"
+                                    <button type="button" onclick="closeAnnulModal()"
                                         class="px-5 py-3 rounded-xl border border-gray-300 hover:bg-gray-50">
                                         Cancelar
                                     </button>
 
+
                                     <button type="submit"
                                         class="px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold"
-                                        onclick="return confirm('¿Estás seguro de anular esta factura?');">
+                                        onclick="return confirm('¿Estás seguro de anular esta factura? Se revertirán sus efectos financieros si corresponde.');">
                                         Confirmar anulación
                                     </button>
 
@@ -679,54 +927,248 @@
 
                     </div>
 
-                    {{-- ========================================================
-             FACTURA YA APROBADA
-        ========================================================= --}}
 
-                    <div class="mt-4 rounded-xl bg-green-50 border border-green-200 p-5">
 
-                        <p class="font-semibold text-green-800">
-                            ✓ Factura confirmada
-                        </p>
-
-                        <p class="text-sm text-green-700 mt-1">
-                            Esta factura ya fue revisada y aprobada correctamente.
-                            No tiene acciones administrativas pendientes.
-                        </p>
-
-                    </div>
+                    {{-- ====================================================
+                     FACTURA ANULADA
+                ==================================================== --}}
                 @elseif ($invoice->estado === 'anulada')
-                    {{-- ========================================================
-             FACTURA ANULADA
-        ========================================================= --}}
-
                     <div class="mt-4 rounded-xl bg-red-50 border border-red-200 p-5">
 
                         <p class="font-semibold text-red-800">
                             ✕ Factura anulada
                         </p>
 
+
                         <p class="text-sm text-red-700 mt-1">
-                            Esta factura fue anulada y no participa en el cashback
-                            ni en los valores acumulados.
+                            Esta factura fue anulada y ya no participa
+                            en cashback, acumulado ni ranking.
                         </p>
 
                     </div>
-            @endif
-
-
-            {{-- ============================================================
-         VOLVER
-    ============================================================ --}}
-
-            <div class="mt-5">
-
-                <a href="{{ route('invoices.index') }}"
-                    class="inline-block px-5 py-3 rounded-xl border border-gray-300 hover:bg-gray-50">
-                    ← Volver a ventas
-                </a>
+                @endif
 
             </div>
 
+        </x-card>
+
+
+
+        {{-- ============================================================
+             AUDITORÍA
+        ============================================================ --}}
+
+        @if ($invoice->audits->count())
+            <x-card>
+
+                <div class="mb-6">
+
+                    <h2 class="text-xl font-bold">
+                        Historial administrativo
+                    </h2>
+
+                    <p class="text-sm text-gray-500 mt-1">
+                        Registro de las acciones realizadas sobre esta factura.
+                    </p>
+
+                </div>
+
+
+                <div class="space-y-4">
+
+                    @foreach ($invoice->audits->sortByDesc('created_at') as $audit)
+                        <div class="rounded-xl border border-gray-200 p-5">
+
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+
+
+                                <div>
+
+                                    <p class="font-semibold text-gray-900">
+
+                                        @if ($audit->accion === 'aprobar')
+                                            ✓ Factura aprobada
+                                        @elseif ($audit->accion === 'modificar')
+                                            ✎ Factura modificada
+                                        @elseif ($audit->accion === 'anular')
+                                            ✕ Factura anulada
+                                        @else
+                                            {{ ucfirst($audit->accion) }}
+                                        @endif
+
+                                    </p>
+
+
+                                    <p class="text-sm text-gray-500 mt-1">
+
+                                        Administrador:
+                                        {{ $audit->admin?->first_name }}
+                                        {{ $audit->admin?->last_name }}
+
+                                    </p>
+
+                                </div>
+
+
+                                <div class="text-sm text-gray-500">
+
+                                    {{ optional($audit->created_at)->format('d/m/Y H:i') }}
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+
+
+                                <div class="rounded-lg bg-gray-50 p-3">
+
+                                    <p class="text-xs text-gray-500">
+                                        Estado anterior
+                                    </p>
+
+                                    <p class="font-semibold mt-1">
+                                        {{ $audit->estado_anterior ?? '—' }}
+                                    </p>
+
+                                </div>
+
+
+                                <div class="rounded-lg bg-gray-50 p-3">
+
+                                    <p class="text-xs text-gray-500">
+                                        Estado nuevo
+                                    </p>
+
+                                    <p class="font-semibold mt-1">
+                                        {{ $audit->estado_nuevo ?? '—' }}
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            @if ($audit->motivo)
+                                <div class="mt-4 rounded-lg bg-yellow-50 border border-yellow-200 p-4">
+
+                                    <p class="text-xs font-semibold text-yellow-800">
+                                        Motivo
+                                    </p>
+
+                                    <p class="text-sm text-yellow-900 mt-1">
+                                        {{ $audit->motivo }}
+                                    </p>
+
+                                </div>
+                            @endif
+
+                        </div>
+                    @endforeach
+
+                </div>
+
+            </x-card>
+        @endif
+
+
+
+        {{-- ============================================================
+             VOLVER
+        ============================================================ --}}
+
+        <div>
+
+            <a href="{{ route('invoices.index') }}"
+                class="inline-block px-5 py-3 rounded-xl border border-gray-300 hover:bg-gray-50">
+                ← Volver a ventas
+            </a>
+
         </div>
-    @endsection
+
+    </div>
+
+
+
+    {{-- ============================================================
+         JAVASCRIPT MODAL ANULACIÓN
+    ============================================================ --}}
+
+    <script>
+        function openAnnulModal() {
+
+            const modal =
+                document.getElementById('annul-modal');
+
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('hidden');
+
+            document.body.classList.add('overflow-hidden');
+
+        }
+
+
+        function closeAnnulModal() {
+
+            const modal =
+                document.getElementById('annul-modal');
+
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add('hidden');
+
+            document.body.classList.remove('overflow-hidden');
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cerrar al pulsar fuera del modal
+        |--------------------------------------------------------------------------
+        */
+
+        document.addEventListener('click', function(event) {
+
+            const modal =
+                document.getElementById('annul-modal');
+
+            if (!modal) {
+                return;
+            }
+
+            if (
+                event.target === modal
+            ) {
+
+                closeAnnulModal();
+
+            }
+
+        });
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cerrar con ESC
+        |--------------------------------------------------------------------------
+        */
+
+        document.addEventListener('keydown', function(event) {
+
+            if (event.key === 'Escape') {
+
+                closeAnnulModal();
+
+            }
+
+        });
+    </script>
+
+@endsection
