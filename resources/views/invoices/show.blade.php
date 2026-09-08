@@ -362,8 +362,7 @@
                                 <td class="py-4">
 
                                     <div class="font-semibold">
-                                        {{ $item->product?->nombre ?? 'Producto eliminado' }}
-                                    </div>
+                                        {{ $item->product?->name ?? 'Producto eliminado' }} </div>
 
                                     @if ($item->product)
                                         <div class="text-sm text-gray-500">
