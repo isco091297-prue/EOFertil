@@ -67,4 +67,8 @@ class Invoice extends Model
     {
         return $this->hasMany(CashbackTransaction::class);
     }
+    public function audits()
+    {
+        return $this->hasMany(InvoiceAudit::class);
+    }
 }

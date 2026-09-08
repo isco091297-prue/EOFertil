@@ -10,19 +10,24 @@ use App\Models\CashbackCampaign;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\InvoiceItem;
-use App\Services\Cashback\CashbackService;
 use Exception;
-use App\Services\Ranking\RankingCalculatorService;
 
 class InvoiceService
 {
-    public function __construct(
-        protected CashbackService $cashbackService,
-        private readonly RankingCalculatorService $rankingCalculatorService,
-    ) {}
-
     /**
      * Registrar una factura.
+     *
+     * IMPORTANTE:
+     *
+     * En esta etapa registrar una factura NO genera cashback
+     * ni procesa rankings.
+     *
+     * La factura queda en estado "procesando" para que el
+     * administrador pueda revisarla y posteriormente aprobarla.
+     *
+     * El cashback y el acumulado/ranking serán procesados por:
+     *
+     * InvoiceAdminService::approve()
      *
      * @throws Exception
      */
@@ -64,36 +69,27 @@ class InvoiceService
 
             /*
             |--------------------------------------------------------------------------
-            | Generar cashback
+            | IMPORTANTE
             |--------------------------------------------------------------------------
             |
-            | Solo la campaña de tipo cashback genera saldo.
-            | Las campañas de ranking acumulado no generan cashback.
+            | NO generar cashback aquí.
+            |
+            | NO procesar rankings aquí.
+            |
+            | La factura queda en "procesando".
+            |
+            | Esto permite que administración revise:
+            |
+            | - fotografía
+            | - número
+            | - fecha
+            | - productos
+            | - valores
+            | - total
+            |
+            | antes de generar cualquier efecto financiero.
             |
             */
-
-            $this->cashbackService->generate(
-                $invoice
-            );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Procesar rankings
-            |--------------------------------------------------------------------------
-            |
-            | La misma factura puede participar:
-            |
-            | - En el ranking Cashback.
-            | - En el ranking acumulado.
-            |
-            | RankingCalculatorService se encarga de determinar
-            | qué campañas aplican.
-            |
-            */
-
-            $this->rankingCalculatorService->process(
-                $invoice
-            );
 
             /*
             |--------------------------------------------------------------------------
@@ -111,36 +107,23 @@ class InvoiceService
             |--------------------------------------------------------------------------
             | Primera factura
             |--------------------------------------------------------------------------
+            |
+            | IMPORTANTE:
+            |
+            | El bono de primera factura todavía NO se genera aquí.
+            |
+            | Se generará cuando administración apruebe la factura.
+            |
             */
-
-            $firstInvoiceBonus = CashbackTransaction::where(
-                'user_id',
-                $invoice->user_id
-            )
-                ->where(
-                    'invoice_id',
-                    $invoice->id
-                )
-                ->where(
-                    'tipo',
-                    'bonificacion'
-                )
-                ->where(
-                    'descripcion',
-                    'Bono por registrar tu primera factura'
-                )
-                ->first();
 
             $updatedInvoice->setAttribute(
                 'logro_primera_factura',
-                $firstInvoiceBonus !== null
+                false
             );
 
             $updatedInvoice->setAttribute(
                 'bono_primera_factura',
-                $firstInvoiceBonus
-                    ? (float) $firstInvoiceBonus->valor
-                    : 0
+                0
             );
 
             return $updatedInvoice;
@@ -450,6 +433,15 @@ class InvoiceService
 
             'origen' =>
             $data['origen'] ?? 'manual',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Estado inicial
+            |--------------------------------------------------------------------------
+            |
+            | La factura queda pendiente de revisión administrativa.
+            |
+            */
 
             'estado' => 'procesando',
         ]);

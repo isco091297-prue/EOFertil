@@ -581,7 +581,18 @@
                 </a>
 
 
-                @if ($invoice->estado !== 'anulada')
+                @if ($invoice->estado === 'procesando')
+                    <form method="POST" action="{{ route('invoices.approve', $invoice) }}"
+                        onsubmit="return confirm('¿Estás seguro de aprobar esta factura? Al aprobarla se generará el cashback y se procesará el acumulado/ranking.');">
+
+                        @csrf
+
+                        <button type="submit" class="px-5 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white">
+                            ✓ Aprobar factura
+                        </button>
+
+                    </form>
+
                     <a href="{{ route('invoices.edit', $invoice) }}"
                         class="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white">
                         Revisar / editar

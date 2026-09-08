@@ -154,6 +154,11 @@ Route::middleware([
         'update',
     ]);
 
+    Route::post(
+        'invoices/{invoice}/approve',
+        [InvoiceController::class, 'approve']
+    )->name('invoices.approve');
+
     /*
     |--------------------------------------------------------------------------
     | Organización

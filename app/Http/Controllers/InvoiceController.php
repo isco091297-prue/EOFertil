@@ -3,9 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
+use App\Services\Invoice\InvoiceAdminService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use RuntimeException;
 
 class InvoiceController extends Controller
 {
+    public function __construct(
+        protected InvoiceAdminService $invoiceAdminService
+    ) {}
+
     /**
      * Listado de facturas.
      */
@@ -20,12 +28,6 @@ class InvoiceController extends Controller
                 'branch',
                 'cashbackCampaign',
             ])
-
-            /*
-            |--------------------------------------------------------------------------
-            | Búsqueda
-            |--------------------------------------------------------------------------
-            */
 
             ->when($search, function ($query) use ($search) {
 
@@ -46,13 +48,11 @@ class InvoiceController extends Controller
                                     'like',
                                     "%{$search}%"
                                 )
-
                                 ->orWhere(
                                     'last_name',
                                     'like',
                                     "%{$search}%"
                                 )
-
                                 ->orWhere(
                                     'identification',
                                     'like',
@@ -61,12 +61,6 @@ class InvoiceController extends Controller
                         });
                 });
             })
-
-            /*
-            |--------------------------------------------------------------------------
-            | Filtro por estado
-            |--------------------------------------------------------------------------
-            */
 
             ->when($estado, function ($query) use ($estado) {
 
@@ -77,9 +71,7 @@ class InvoiceController extends Controller
             })
 
             ->latest()
-
             ->paginate(15)
-
             ->withQueryString();
 
         return view(
@@ -99,6 +91,7 @@ class InvoiceController extends Controller
             'cashbackCampaign',
             'items.product',
             'cashbackTransactions',
+            'audits.admin',
         ]);
 
         return view(
@@ -109,14 +102,6 @@ class InvoiceController extends Controller
 
     /**
      * Mostrar formulario de edición.
-     *
-     * IMPORTANTE:
-     * En esta primera etapa solamente mostramos
-     * la información de la factura.
-     *
-     * La modificación real se habilitará después
-     * de implementar correctamente la reversión
-     * y recalculación de cashback y rankings.
      */
     public function edit(Invoice $invoice)
     {
@@ -134,16 +119,56 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Aprobar factura.
+     */
+    public function approve(
+        Request $request,
+        Invoice $invoice
+    ): RedirectResponse {
+
+        $request->validate([
+            'motivo' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+        ]);
+
+        try {
+
+            $this->invoiceAdminService->approve(
+                invoice: $invoice,
+                adminUserId: (int) $request->user()->id,
+                motivo: $request->input('motivo'),
+            );
+
+            return redirect()
+                ->route('invoices.show', $invoice)
+                ->with(
+                    'success',
+                    'La factura fue aprobada correctamente.'
+                );
+        } catch (RuntimeException $e) {
+
+            return redirect()
+                ->route('invoices.show', $invoice)
+                ->with(
+                    'error',
+                    $e->getMessage()
+                );
+        }
+    }
+
+    /**
      * Actualizar factura.
      *
-     * TEMPORALMENTE NO MODIFICA LA FACTURA.
-     *
-     * Esto es intencional para evitar que alguien
-     * pueda cambiar valores antes de tener lista
-     * la lógica financiera.
+     * La modificación financiera todavía no se habilita.
      */
-    public function update(Invoice $invoice)
-    {
+    public function update(
+        Request $request,
+        Invoice $invoice
+    ): RedirectResponse {
+
         return redirect()
             ->route('invoices.show', $invoice)
             ->with(
