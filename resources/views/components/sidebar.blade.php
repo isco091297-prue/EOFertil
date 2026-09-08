@@ -51,8 +51,8 @@
             Comercial
         </div>
 
-        <x-menu-item route="#" icon="💰" label="Ventas" />
-
+        <x-menu-item route="invoices.index" icon="💰" label="Ventas" />
+        
         <div class="pt-6 pb-2 text-xs uppercase tracking-widest text-green-300 font-bold">
             Sistema
         </div>

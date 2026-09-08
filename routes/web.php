@@ -12,6 +12,7 @@ use App\Http\Controllers\CashbackCampaignWinnerController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CropController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProblemController;
 use App\Http\Controllers\ProtocolController;
@@ -44,6 +45,12 @@ Route::middleware([
         DashboardController::class,
         'index',
     ])->name('dashboard');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Campañas Cashback
+    |--------------------------------------------------------------------------
+    */
 
     Route::resource(
         'cashback-campaigns',
@@ -112,6 +119,12 @@ Route::middleware([
         ]);
     });
 
+    /*
+    |--------------------------------------------------------------------------
+    | Usuarios
+    |--------------------------------------------------------------------------
+    */
+
     Route::resource(
         'users',
         UserController::class
@@ -124,6 +137,28 @@ Route::middleware([
             'approve',
         ]
     )->name('users.approve');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ventas / Facturas
+    |--------------------------------------------------------------------------
+    */
+
+    Route::resource(
+        'invoices',
+        InvoiceController::class
+    )->only([
+        'index',
+        'show',
+        'edit',
+        'update',
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Organización
+    |--------------------------------------------------------------------------
+    */
 
     Route::resource(
         'warehouses',
@@ -139,6 +174,12 @@ Route::middleware([
         'branches',
         BranchController::class
     );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Catálogo Técnico
+    |--------------------------------------------------------------------------
+    */
 
     Route::resource(
         'crops',
