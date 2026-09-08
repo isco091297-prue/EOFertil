@@ -160,20 +160,173 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Anular factura.
+     */
+    public function annul(
+        Request $request,
+        Invoice $invoice
+    ): RedirectResponse {
+
+        $request->validate([
+            'motivo' => [
+                'required',
+                'string',
+                'max:1000',
+            ],
+        ]);
+
+        try {
+
+            $this->invoiceAdminService->annul(
+                invoice: $invoice,
+                adminUserId: (int) $request->user()->id,
+                motivo: $request->input('motivo'),
+            );
+
+            return redirect()
+                ->route('invoices.show', $invoice)
+                ->with(
+                    'success',
+                    'La factura fue anulada correctamente.'
+                );
+        } catch (RuntimeException $e) {
+
+            return redirect()
+                ->route('invoices.show', $invoice)
+                ->with(
+                    'error',
+                    $e->getMessage()
+                );
+        }
+    }
+
+    /**
      * Actualizar factura.
-     *
-     * La modificación financiera todavía no se habilita.
      */
     public function update(
         Request $request,
         Invoice $invoice
     ): RedirectResponse {
 
-        return redirect()
-            ->route('invoices.show', $invoice)
-            ->with(
-                'error',
-                'La modificación de facturas todavía no está habilitada.'
+        /*
+        |--------------------------------------------------------------------------
+        | Validación
+        |--------------------------------------------------------------------------
+        */
+
+        $validated = $request->validate([
+            'numero_factura_original' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+
+            'fecha_factura' => [
+                'required',
+                'date',
+            ],
+
+            'total_factura' => [
+                'required',
+                'numeric',
+                'min:0.01',
+            ],
+
+            'total_productos_participantes' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+
+            'items' => [
+                'nullable',
+                'array',
+            ],
+
+            'items.*.valor' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+
+            'motivo' => [
+                'required',
+                'string',
+                'max:1000',
+            ],
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validar coherencia del total participante
+        |--------------------------------------------------------------------------
+        */
+
+        $items = $validated['items'] ?? [];
+
+        $totalItems = round(
+            collect($items)
+                ->sum(function ($item) {
+                    return (float) ($item['valor'] ?? 0);
+                }),
+            2
+        );
+
+        $totalParticipantes = round(
+            (float) $validated['total_productos_participantes'],
+            2
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | El total de productos participantes debe coincidir
+        | con la suma de sus productos.
+        |--------------------------------------------------------------------------
+        */
+
+        if (abs($totalItems - $totalParticipantes) > 0.01) {
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'total_productos_participantes' =>
+                    'El total de productos participantes ($'
+                        . number_format($totalItems, 2)
+                        . ') debe coincidir con la suma de los productos registrados.',
+                ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ejecutar modificación
+        |--------------------------------------------------------------------------
+        */
+
+        try {
+
+            $validated['motivo'] =
+                trim($validated['motivo']);
+
+            $this->invoiceAdminService->update(
+                invoice: $invoice,
+                data: $validated,
+                adminUserId: (int) $request->user()->id,
             );
+
+            return redirect()
+                ->route('invoices.show', $invoice)
+                ->with(
+                    'success',
+                    'La factura fue modificada correctamente. El cashback y el acumulado fueron recalculados.'
+                );
+        } catch (RuntimeException $e) {
+
+            return back()
+                ->withInput()
+                ->with(
+                    'error',
+                    $e->getMessage()
+                );
+        }
     }
 }

@@ -6,60 +6,59 @@ use App\Models\CashbackCampaign;
 use App\Models\CampaignUserRanking;
 use App\Models\Invoice;
 use App\Models\InvoiceAudit;
+use App\Services\Cashback\CashbackService;
+use App\Services\Ranking\RankingCalculatorService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class InvoiceAdminService
 {
+    public function __construct(
+        protected CashbackService $cashbackService,
+        protected RankingCalculatorService $rankingCalculatorService
+    ) {}
+
     /**
      * Aprobar una factura pendiente.
      *
-     * Al aprobar:
+     * Flujo:
      *
-     * 1. Se verifica que la factura esté en procesando.
-     * 2. Se genera el cashback.
-     * 3. Se procesa el ranking/acumulado.
-     * 4. Se registra la auditoría.
+     * procesando
+     *     ↓
+     * calcula/acredita cashback
+     *     ↓
+     * confirmada
+     *     ↓
+     * reconstruye acumulado/ranking
      */
     public function approve(
         Invoice $invoice,
         int $adminUserId,
         ?string $motivo = null
     ): Invoice {
+
         return DB::transaction(function () use (
             $invoice,
             $adminUserId,
             $motivo
         ) {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Bloquear factura
-            |--------------------------------------------------------------------------
-            */
-
             $invoice = Invoice::query()
+                ->with([
+                    'user',
+                    'branch',
+                    'cashbackCampaign',
+                    'items.product',
+                ])
                 ->whereKey($invoice->id)
                 ->lockForUpdate()
                 ->firstOrFail();
-
-            /*
-            |--------------------------------------------------------------------------
-            | Validar estado
-            |--------------------------------------------------------------------------
-            */
 
             if ($invoice->estado !== 'procesando') {
                 throw new RuntimeException(
                     'Solo se pueden aprobar facturas pendientes de revisión.'
                 );
             }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Guardar estado anterior
-            |--------------------------------------------------------------------------
-            */
 
             $estadoAnterior = $invoice->estado;
 
@@ -71,31 +70,33 @@ class InvoiceAdminService
             |--------------------------------------------------------------------------
             | Generar cashback
             |--------------------------------------------------------------------------
+            |
+            | Aquí recién se acredita el cashback al usuario.
+            |
+            | CashbackService utiliza la campaña guardada
+            | en cashback_campaign_id.
+            |
             */
 
-            app(\App\Services\Cashback\CashbackService::class)
-                ->generate($invoice);
+            $this->cashbackService->generate(
+                $invoice
+            );
 
             /*
             |--------------------------------------------------------------------------
-            | Procesar ranking / acumulado
+            | Reconstruir acumulado / ranking
             |--------------------------------------------------------------------------
             */
 
-            app(\App\Services\Ranking\RankingCalculatorService::class)
-                ->process($invoice);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Recargar factura
-            |--------------------------------------------------------------------------
-            */
+            $this->rebuildRankingsForUserInternal(
+                $invoice->user_id
+            );
 
             $invoice->refresh();
 
             /*
             |--------------------------------------------------------------------------
-            | Registrar auditoría
+            | Auditoría
             |--------------------------------------------------------------------------
             */
 
@@ -115,14 +116,307 @@ class InvoiceAdminService
     }
 
     /**
-     * Anular una factura confirmada.
+     * Modificar una factura.
      *
-     * Toda la operación se ejecuta dentro de una única transacción:
+     * CASO 1:
      *
-     * - reversión financiera;
-     * - cambio de estado;
-     * - reconstrucción del ranking;
-     * - auditoría.
+     * procesando
+     *     ↓
+     * modificar
+     *     ↓
+     * recalcular cashback
+     *     ↓
+     * sigue procesando
+     *
+     * El cashback calculado queda guardado en la factura,
+     * pero todavía NO se acredita al usuario.
+     *
+     *
+     * CASO 2:
+     *
+     * confirmada
+     *     ↓
+     * revertir efectos anteriores
+     *     ↓
+     * modificar
+     *     ↓
+     * recalcular cashback
+     *     ↓
+     * acreditar nuevo cashback
+     *     ↓
+     * sigue confirmada
+     *
+     * En ambos casos se reconstruye el acumulado/ranking.
+     */
+    public function update(
+        Invoice $invoice,
+        array $data,
+        int $adminUserId
+    ): Invoice {
+
+        return DB::transaction(function () use (
+            $invoice,
+            $data,
+            $adminUserId
+        ) {
+
+            $invoice = Invoice::query()
+                ->with([
+                    'items.product',
+                    'user',
+                    'cashbackCampaign',
+                    'branch',
+                ])
+                ->whereKey($invoice->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($invoice->estado === 'anulada') {
+                throw new RuntimeException(
+                    'Una factura anulada no puede modificarse.'
+                );
+            }
+
+            $estadoAnterior = $invoice->estado;
+
+            $eraConfirmada =
+                $invoice->estado === 'confirmada';
+
+            $datosAnteriores =
+                $this->invoiceSnapshot(
+                    $invoice
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Si estaba confirmada
+            |--------------------------------------------------------------------------
+            |
+            | Primero quitamos completamente los efectos financieros
+            | de la versión anterior.
+            |
+            */
+
+            if ($eraConfirmada) {
+
+                $this->cashbackService
+                    ->reverseInvoiceInternal(
+                        $invoice,
+                        $data['motivo'] ?? null
+                    );
+
+                $invoice->cashback_generado = 0;
+                $invoice->porcentaje_cashback = 0;
+
+                $invoice->save();
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Actualizar datos generales
+            |--------------------------------------------------------------------------
+            */
+
+            $invoice->numero_factura_original =
+                $data['numero_factura_original'];
+
+            $invoice->numero_factura_normalizado =
+                $this->normalizeInvoiceNumber(
+                    $data['numero_factura_original']
+                );
+
+            $invoice->fecha_factura =
+                $data['fecha_factura'];
+
+            $invoice->total_factura =
+                $data['total_factura'];
+
+            /*
+            |--------------------------------------------------------------------------
+            | Actualizar productos
+            |--------------------------------------------------------------------------
+            |
+            | Los invoice_items representan los productos EOFertil
+            | registrados en la factura.
+            |
+            */
+
+            if (
+                isset($data['items'])
+                && is_array($data['items'])
+            ) {
+
+                foreach (
+                    $data['items'] as $itemId => $itemData
+                ) {
+
+                    $item = $invoice->items
+                        ->firstWhere(
+                            'id',
+                            (int) $itemId
+                        );
+
+                    if (!$item) {
+                        continue;
+                    }
+
+                    $item->valor =
+                        $itemData['valor'];
+
+                    $item->save();
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Recalcular total de productos participantes
+            |--------------------------------------------------------------------------
+            */
+
+            $invoice->total_productos_participantes =
+                $invoice->items()->sum('valor');
+
+            /*
+            |--------------------------------------------------------------------------
+            | MODIFICACIÓN DE PENDIENTE
+            |--------------------------------------------------------------------------
+            */
+
+            if (!$eraConfirmada) {
+
+                /*
+                |------------------------------------------------------------------
+                | Recalcular cashback utilizando la campaña ORIGINAL
+                | de la factura.
+                |------------------------------------------------------------------
+                */
+
+                $invoice->cashback_generado = 0;
+                $invoice->porcentaje_cashback = 0;
+                $invoice->estado = 'procesando';
+
+                $invoice->save();
+
+                $invoice =
+                    $this->cashbackService
+                    ->recalculatePending(
+                        $invoice->fresh()
+                    );
+
+                /*
+                |------------------------------------------------------------------
+                | IMPORTANTE
+                |------------------------------------------------------------------
+                |
+                | La factura sigue procesando.
+                |
+                | El cashback calculado queda en la factura,
+                | pero no se acredita al saldo.
+                |
+                */
+
+                $invoice->estado = 'procesando';
+                $invoice->save();
+
+                /*
+                |------------------------------------------------------------------
+                | El acumulado/ranking solamente considera confirmadas.
+                |------------------------------------------------------------------
+                */
+
+                $this->rebuildRankingsForUserInternal(
+                    $invoice->user_id
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | MODIFICACIÓN DE CONFIRMADA
+            |--------------------------------------------------------------------------
+            */ else {
+
+                /*
+                |------------------------------------------------------------------
+                | La factura ya fue revertida arriba.
+                |------------------------------------------------------------------
+                */
+
+                $invoice->cashback_generado = 0;
+                $invoice->porcentaje_cashback = 0;
+                $invoice->estado = 'procesando';
+
+                $invoice->save();
+
+                /*
+                |------------------------------------------------------------------
+                | Generamos nuevamente.
+                |------------------------------------------------------------------
+                |
+                | Esto:
+                |
+                | - usa la campaña guardada en la factura;
+                | - calcula el nuevo cashback;
+                | - acredita el nuevo importe;
+                | - crea los nuevos movimientos;
+                | - vuelve a dejar la factura confirmada.
+                |
+                */
+
+                $this->cashbackService->generate(
+                    $invoice->fresh()
+                );
+
+                /*
+                |------------------------------------------------------------------
+                | Reconstruir acumulado / ranking.
+                |------------------------------------------------------------------
+                */
+
+                $this->rebuildRankingsForUserInternal(
+                    $invoice->user_id
+                );
+            }
+
+            $invoice->refresh();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Auditoría
+            |--------------------------------------------------------------------------
+            */
+
+            $this->createAudit(
+                invoice: $invoice,
+                adminUserId: $adminUserId,
+                accion: 'modificar',
+                motivo: $data['motivo'] ?? null,
+                estadoAnterior: $estadoAnterior,
+                estadoNuevo: $invoice->estado,
+                datosAnteriores: $datosAnteriores,
+                datosNuevos: $this->invoiceSnapshot($invoice),
+            );
+
+            return $invoice;
+        });
+    }
+
+    /**
+     * Anular una factura.
+     *
+     * Se puede anular tanto:
+     *
+     * - procesando
+     * - confirmada
+     *
+     * Si está procesando:
+     *
+     * no hay cashback acreditado,
+     * por lo que simplemente pasa a anulada.
+     *
+     * Si está confirmada:
+     *
+     * se revierten cashback y bonificación,
+     * y después pasa a anulada.
      */
     public function annul(
         Invoice $invoice,
@@ -130,90 +424,102 @@ class InvoiceAdminService
         ?string $motivo = null
     ): Invoice {
 
+        if (!$motivo) {
+            throw new RuntimeException(
+                'El motivo de anulación es obligatorio.'
+            );
+        }
+
         return DB::transaction(function () use (
             $invoice,
             $adminUserId,
             $motivo
         ) {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Bloquear factura
-            |--------------------------------------------------------------------------
-            */
-
             $invoice = Invoice::query()
+                ->with([
+                    'user',
+                    'cashbackCampaign',
+                    'items.product',
+                    'branch',
+                ])
                 ->whereKey($invoice->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Validar estado
-            |--------------------------------------------------------------------------
-            */
-
-            if ($invoice->estado !== 'confirmada') {
+            if ($invoice->estado === 'anulada') {
                 throw new RuntimeException(
-                    'Solo se pueden anular facturas confirmadas.'
+                    'La factura ya está anulada.'
                 );
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Estado y snapshot anterior
-            |--------------------------------------------------------------------------
-            */
+            if (
+                $invoice->estado !== 'procesando'
+                && $invoice->estado !== 'confirmada'
+            ) {
+                throw new RuntimeException(
+                    'La factura no puede ser anulada.'
+                );
+            }
 
             $estadoAnterior = $invoice->estado;
 
-            $datosAnteriores = $this->invoiceSnapshot(
-                $invoice
-            );
+            $datosAnteriores =
+                $this->invoiceSnapshot(
+                    $invoice
+                );
 
             /*
             |--------------------------------------------------------------------------
-            | Revertir cashback
+            | Revertir cashback si existe.
             |--------------------------------------------------------------------------
+            |
+            | Si está procesando y todavía no tiene movimientos,
+            | reverseInvoiceInternal() simplemente no hace nada.
+            |
             */
 
-            app(\App\Services\Cashback\CashbackService::class)
-                ->reverseInvoice(
+            $this->cashbackService
+                ->reverseInvoiceInternal(
                     $invoice,
                     $motivo
                 );
 
             /*
             |--------------------------------------------------------------------------
-            | Marcar factura como anulada
+            | Marcar como anulada
             |--------------------------------------------------------------------------
             */
 
             $invoice->update([
-                'estado' => 'anulada',
+                'estado' =>
+                'anulada',
+
+                'cashback_generado' =>
+                0,
+
+                'porcentaje_cashback' =>
+                0,
             ]);
 
             /*
             |--------------------------------------------------------------------------
-            | Reconstruir ranking / acumulado
+            | Reconstruir acumulado / ranking
             |--------------------------------------------------------------------------
+            |
+            | Una factura anulada ya no cuenta.
+            |
             */
 
             $this->rebuildRankingsForUserInternal(
                 $invoice->user_id
             );
 
-            /*
-            |--------------------------------------------------------------------------
-            | Recargar factura
-            |--------------------------------------------------------------------------
-            */
-
             $invoice->refresh();
 
             /*
             |--------------------------------------------------------------------------
-            | Registrar auditoría
+            | Auditoría
             |--------------------------------------------------------------------------
             */
 
@@ -234,9 +540,6 @@ class InvoiceAdminService
 
     /**
      * Reconstruir los rankings de un usuario.
-     *
-     * Este método público mantiene su comportamiento actual
-     * y abre una transacción cuando se utiliza de forma independiente.
      */
     public function rebuildRankingsForUser(
         int $userId
@@ -253,39 +556,31 @@ class InvoiceAdminService
     /**
      * Reconstrucción interna de rankings.
      *
-     * IMPORTANTE:
-     *
-     * Este método NO abre una nueva transacción.
-     *
-     * Esto permite utilizarlo dentro de operaciones como:
-     *
-     * annul()
-     *
-     * donde ya existe una transacción principal.
+     * No abre una transacción propia.
      */
     protected function rebuildRankingsForUserInternal(
         int $userId
     ): void {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Obtener campañas relevantes
-        |--------------------------------------------------------------------------
-        */
+        $campaignIdsFromRankings =
+            CampaignUserRanking::query()
+            ->where(
+                'user_id',
+                $userId
+            )
+            ->pluck(
+                'cashback_campaign_id'
+            );
 
-        $campaignIdsFromRankings = CampaignUserRanking::query()
-            ->where('user_id', $userId)
-            ->pluck('cashback_campaign_id');
-
-        $userInvoiceDates = Invoice::query()
-            ->where('user_id', $userId)
-            ->pluck('fecha_factura');
-
-        /*
-        |--------------------------------------------------------------------------
-        | Si no hay facturas ni rankings
-        |--------------------------------------------------------------------------
-        */
+        $userInvoiceDates =
+            Invoice::query()
+            ->where(
+                'user_id',
+                $userId
+            )
+            ->pluck(
+                'fecha_factura'
+            );
 
         if (
             $campaignIdsFromRankings->isEmpty()
@@ -296,7 +591,7 @@ class InvoiceAdminService
 
         /*
         |--------------------------------------------------------------------------
-        | Obtener campañas
+        | Obtener campañas relevantes.
         |--------------------------------------------------------------------------
         */
 
@@ -306,7 +601,9 @@ class InvoiceAdminService
                 $userInvoiceDates
             ) {
 
-                if ($campaignIdsFromRankings->isNotEmpty()) {
+                if (
+                    $campaignIdsFromRankings->isNotEmpty()
+                ) {
 
                     $query->whereIn(
                         'id',
@@ -314,51 +611,45 @@ class InvoiceAdminService
                     );
                 }
 
-                if ($userInvoiceDates->isNotEmpty()) {
+                if (
+                    $userInvoiceDates->isNotEmpty()
+                ) {
 
-                    $query->orWhere(function ($query) use (
-                        $userInvoiceDates
-                    ) {
+                    $query->orWhere(function (
+                        $query
+                    ) use ($userInvoiceDates) {
 
-                        foreach ($userInvoiceDates as $date) {
+                        foreach (
+                            $userInvoiceDates as $date
+                        ) {
 
-                            $query->orWhere(function ($query) use (
-                                $date
-                            ) {
+                            $query->orWhere(
+                                function ($query) use (
+                                    $date
+                                ) {
 
-                                $query
-                                    ->whereDate(
-                                        'fecha_inicio',
-                                        '<=',
-                                        $date
-                                    )
-                                    ->whereDate(
-                                        'fecha_fin',
-                                        '>=',
-                                        $date
-                                    );
-                            });
+                                    $query
+                                        ->whereDate(
+                                            'fecha_inicio',
+                                            '<=',
+                                            $date
+                                        )
+                                        ->whereDate(
+                                            'fecha_fin',
+                                            '>=',
+                                            $date
+                                        );
+                                }
+                            );
                         }
                     });
                 }
             })
             ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Usuario
-        |--------------------------------------------------------------------------
-        */
-
         $user = \App\Models\User::findOrFail(
             $userId
         );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Procesar campañas
-        |--------------------------------------------------------------------------
-        */
 
         foreach ($campaigns as $campaign) {
 
@@ -378,8 +669,18 @@ class InvoiceAdminService
 
             /*
             |--------------------------------------------------------------------------
-            | Facturas válidas
+            | Facturas válidas para ESTA campaña.
             |--------------------------------------------------------------------------
+            |
+            | MUY IMPORTANTE:
+            |
+            | No basta con que la fecha caiga dentro del período.
+            |
+            | La factura debe tener guardado este campaign_id.
+            |
+            | Así evitamos que una factura del 1% termine contabilizada
+            | accidentalmente dentro de otra campaña del 2%.
+            |
             */
 
             $invoices = Invoice::query()
@@ -387,8 +688,18 @@ class InvoiceAdminService
                     'user',
                     'branch',
                 ])
-                ->where('user_id', $userId)
-                ->where('estado', 'confirmada')
+                ->where(
+                    'user_id',
+                    $userId
+                )
+                ->where(
+                    'cashback_campaign_id',
+                    $campaign->id
+                )
+                ->where(
+                    'estado',
+                    'confirmada'
+                )
                 ->whereDate(
                     'fecha_factura',
                     '>=',
@@ -403,34 +714,42 @@ class InvoiceAdminService
                 ->get();
 
             $salesTotal = 0.0;
-
             $cashbackTotal = 0.0;
-
             $invoiceCount = 0;
-
-            /*
-            |--------------------------------------------------------------------------
-            | Procesar facturas
-            |--------------------------------------------------------------------------
-            */
 
             foreach ($invoices as $invoice) {
 
-                if (!$this->campaignAppliesToInvoice(
-                    $campaign,
-                    $invoice,
-                    $user
-                )) {
+                if (
+                    !$this->campaignAppliesToInvoice(
+                        $campaign,
+                        $invoice,
+                        $user
+                    )
+                ) {
                     continue;
                 }
 
+                /*
+                |------------------------------------------------------------------
+                | Acumulado de ventas.
+                |------------------------------------------------------------------
+                */
+
                 $salesTotal +=
-                    (float) $invoice->total_productos_participantes;
+                    (float) $invoice
+                        ->total_productos_participantes;
+
+                /*
+                |------------------------------------------------------------------
+                | Cashback acumulado.
+                |------------------------------------------------------------------
+                */
 
                 if ($isCashbackRanking) {
 
                     $cashbackTotal +=
-                        (float) $invoice->cashback_generado;
+                        (float) $invoice
+                            ->cashback_generado;
                 }
 
                 $invoiceCount++;
@@ -438,7 +757,7 @@ class InvoiceAdminService
 
             /*
             |--------------------------------------------------------------------------
-            | Sin facturas válidas
+            | Si no existen facturas válidas
             |--------------------------------------------------------------------------
             */
 
@@ -473,12 +792,6 @@ class InvoiceAdminService
                     $userId,
                 ]);
 
-            /*
-            |--------------------------------------------------------------------------
-            | Ubicación actual
-            |--------------------------------------------------------------------------
-            */
-
             $ranking->warehouse_id =
                 $user->warehouse_id;
 
@@ -488,17 +801,17 @@ class InvoiceAdminService
             $ranking->branch_id =
                 $user->branch_id;
 
-            /*
-            |--------------------------------------------------------------------------
-            | Valores reconstruidos
-            |--------------------------------------------------------------------------
-            */
-
             $ranking->sales_total =
-                round($salesTotal, 2);
+                round(
+                    $salesTotal,
+                    2
+                );
 
             $ranking->cashback_total =
-                round($cashbackTotal, 2);
+                round(
+                    $cashbackTotal,
+                    2
+                );
 
             $ranking->invoice_count =
                 $invoiceCount;
@@ -511,9 +824,6 @@ class InvoiceAdminService
 
     /**
      * Determinar si una campaña aplica a una factura.
-     *
-     * Utiliza exactamente la misma lógica
-     * que RankingCalculatorService.
      */
     protected function campaignAppliesToInvoice(
         CashbackCampaign $campaign,
@@ -521,31 +831,18 @@ class InvoiceAdminService
         \App\Models\User $user
     ): bool {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Todos participan
-        |--------------------------------------------------------------------------
-        */
-
-        if ($campaign->participant_type === 'all') {
+        if (
+            $campaign->participant_type === 'all'
+        ) {
             return true;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Consulta de alcances
-        |--------------------------------------------------------------------------
-        */
+        $scopeQuery =
+            $campaign->scopes();
 
-        $scopeQuery = $campaign->scopes();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Almacén
-        |--------------------------------------------------------------------------
-        */
-
-        if ($campaign->participant_type === 'warehouse') {
+        if (
+            $campaign->participant_type === 'warehouse'
+        ) {
 
             if (!$user->warehouse_id) {
                 return false;
@@ -563,13 +860,9 @@ class InvoiceAdminService
                 ->exists();
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Zona
-        |--------------------------------------------------------------------------
-        */
-
-        if ($campaign->participant_type === 'zone') {
+        if (
+            $campaign->participant_type === 'zone'
+        ) {
 
             if (!$user->zone_id) {
                 return false;
@@ -587,13 +880,9 @@ class InvoiceAdminService
                 ->exists();
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Sucursal
-        |--------------------------------------------------------------------------
-        */
-
-        if ($campaign->participant_type === 'branch') {
+        if (
+            $campaign->participant_type === 'branch'
+        ) {
 
             return $scopeQuery
                 ->where(
@@ -611,7 +900,7 @@ class InvoiceAdminService
     }
 
     /**
-     * Crear registro de auditoría.
+     * Crear auditoría.
      */
     protected function createAudit(
         Invoice $invoice,
@@ -678,6 +967,9 @@ class InvoiceAdminService
                 $invoice->fecha_factura
             )->format('Y-m-d'),
 
+            'cashback_campaign_id' =>
+            $invoice->cashback_campaign_id,
+
             'total_factura' =>
             (float) $invoice->total_factura,
 
@@ -714,5 +1006,21 @@ class InvoiceAdminService
                 ->values()
                 ->toArray(),
         ];
+    }
+
+    /**
+     * Normalizar número de factura.
+     */
+    protected function normalizeInvoiceNumber(
+        string $numero
+    ): string {
+
+        return strtoupper(
+            preg_replace(
+                '/[^A-Z0-9]/',
+                '',
+                $numero
+            )
+        );
     }
 }

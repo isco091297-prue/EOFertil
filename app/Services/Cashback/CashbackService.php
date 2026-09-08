@@ -19,6 +19,15 @@ class CashbackService
     /**
      * Generar cashback de una factura.
      *
+     * Este método se utiliza cuando la factura pasa a CONFIRMADA.
+     *
+     * En este punto:
+     *
+     * - Se calcula el cashback.
+     * - Se actualiza la factura.
+     * - Se acredita el cashback al usuario.
+     * - Se registra el movimiento.
+     *
      * @throws Exception
      */
     public function generate(
@@ -57,21 +66,21 @@ class CashbackService
 
             /*
             |--------------------------------------------------------------------------
-            | Calcular Cashback
+            | Calcular cashback
             |--------------------------------------------------------------------------
             |
-            | El cashback se calcula únicamente sobre los productos
-            | participantes de la factura.
+            | IMPORTANTE:
+            |
+            | El porcentaje utilizado es el de la campaña que está
+            | guardada en la propia factura.
+            |
+            | No utilizamos la campaña actual del sistema.
             |
             */
 
-            $cashback = round(
-                (
-                    $invoice->total_productos_participantes
-                    *
-                    $campaign->porcentaje
-                ) / 100,
-                2
+            $cashback = $this->calculateCashback(
+                $invoice,
+                $campaign
             );
 
             /*
@@ -134,15 +143,10 @@ class CashbackService
             | IMPORTANTE
             |--------------------------------------------------------------------------
             |
-            | El ranking NO se actualiza aquí.
+            | El ranking/acumulado NO se actualiza aquí.
             |
-            | El ranking se procesa posteriormente desde:
-            |
-            |     InvoiceAdminService
-            |         ↓
-            |     RankingCalculatorService
-            |
-            | Esto evita que una misma factura se contabilice dos veces.
+            | InvoiceAdminService se encarga posteriormente
+            | de reconstruirlo.
             |
             */
 
@@ -151,18 +155,142 @@ class CashbackService
     }
 
     /**
+     * Calcular cashback de una factura sin acreditar dinero.
+     *
+     * Este método se utiliza cuando el administrador modifica
+     * una factura que todavía está en estado "procesando".
+     *
+     * Ejemplo:
+     *
+     * $40 × 1% = $0.40
+     *
+     * Si el administrador corrige la factura a $30:
+     *
+     * $30 × 1% = $0.30
+     *
+     * La factura permanece "procesando".
+     *
+     * NO se modifica el saldo del usuario.
+     * NO se crean movimientos de cashback.
+     * NO se confirma la factura.
+     *
+     * @throws Exception
+     */
+    public function recalculatePending(
+        Invoice $invoice
+    ): Invoice {
+
+        $invoice->loadMissing([
+            'user',
+            'cashbackCampaign',
+            'branch',
+        ]);
+
+        $user = $invoice->user;
+
+        $campaign = $invoice->cashbackCampaign;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validar campaña y usuario
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$user) {
+            throw new Exception(
+                'La factura no tiene usuario.'
+            );
+        }
+
+        if (!$campaign) {
+            throw new Exception(
+                'La factura no pertenece a una campaña.'
+            );
+        }
+
+        if ($invoice->estado === 'anulada') {
+            throw new Exception(
+                'La factura está anulada.'
+            );
+        }
+
+        if (
+            (float) $invoice->total_productos_participantes
+            <= 0
+        ) {
+            throw new Exception(
+                'No existen productos participantes.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Calcular cashback
+        |--------------------------------------------------------------------------
+        |
+        | Se utiliza EXACTAMENTE la campaña vinculada a la factura.
+        |
+        */
+
+        $cashback = $this->calculateCashback(
+            $invoice,
+            $campaign
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Guardar cálculo
+        |--------------------------------------------------------------------------
+        |
+        | Solamente guardamos el resultado calculado.
+        |
+        | NO cambiamos el estado.
+        | NO actualizamos saldo.
+        | NO creamos transacciones.
+        |
+        */
+
+        $invoice->update([
+            'porcentaje_cashback' =>
+            $campaign->porcentaje,
+
+            'cashback_generado' =>
+            $cashback,
+
+            'estado' =>
+            'procesando',
+        ]);
+
+        return $invoice->fresh();
+    }
+
+    /**
+     * Calcular el cashback de una factura.
+     */
+    public function calculateCashback(
+        Invoice $invoice,
+        CashbackCampaign $campaign
+    ): float {
+
+        return round(
+            (
+                (float) $invoice->total_productos_participantes
+                *
+                (float) $campaign->porcentaje
+            ) / 100,
+            2
+        );
+    }
+
+    /**
      * Revertir los efectos de cashback de una factura.
      *
-     * IMPORTANTE:
+     * Este método mantiene una transacción propia para poder utilizarse
+     * de forma independiente.
      *
-     * - NO elimina las transacciones originales.
-     * - NO elimina retiros existentes.
-     * - Crea nuevos movimientos de egreso.
-     * - Revierte cashback_total.
-     * - Revierte cashback_available.
-     * - NO modifica cashback_claimed.
-     *
-     * Esto permite mantener un historial financiero completo.
+     * Para operaciones administrativas que ya están dentro de una
+     * transacción mayor, InvoiceAdminService utiliza
+     * reverseInvoiceInternal().
      *
      * @throws Exception
      */
@@ -176,326 +304,336 @@ class CashbackService
             $motivo
         ) {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Bloquear factura
-            |--------------------------------------------------------------------------
-            */
-
-            $invoice = Invoice::query()
-                ->whereKey($invoice->id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            /*
-            |--------------------------------------------------------------------------
-            | Relaciones
-            |--------------------------------------------------------------------------
-            */
-
-            $invoice->loadMissing([
-                'user',
-                'cashbackCampaign',
-            ]);
-
-            $user = $invoice->user;
-
-            if (!$user) {
-                throw new Exception(
-                    'La factura no tiene usuario.'
-                );
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Buscar movimientos originales de la factura
-            |--------------------------------------------------------------------------
-            |
-            | Solo consideramos ingresos.
-            |
-            | Las reversiones anteriores son egresos y por tanto
-            | no deben volver a revertirse.
-            |
-            */
-
-            $originalTransactions =
-                CashbackTransaction::query()
-                ->where(
-                    'invoice_id',
-                    $invoice->id
-                )
-                ->where(
-                    'user_id',
-                    $user->id
-                )
-                ->where(
-                    'movimiento',
-                    'ingreso'
-                )
-                ->whereIn(
-                    'tipo',
-                    [
-                        'factura',
-                        'bonificacion',
-                    ]
-                )
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get();
-
-            /*
-            |--------------------------------------------------------------------------
-            | No hay movimientos que revertir
-            |--------------------------------------------------------------------------
-            */
-
-            if ($originalTransactions->isEmpty()) {
-
-                /*
-                | Si la factura nunca generó cashback,
-                | no hay nada financiero que revertir.
-                |
-                */
-
-                return;
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Evitar doble reversión
-            |--------------------------------------------------------------------------
-            |
-            | Calculamos cuánto de cada tipo ya fue revertido.
-            |
-            */
-
-            $reversedTransactions =
-                CashbackTransaction::query()
-                ->where(
-                    'invoice_id',
-                    $invoice->id
-                )
-                ->where(
-                    'user_id',
-                    $user->id
-                )
-                ->where(
-                    'movimiento',
-                    'egreso'
-                )
-                ->whereIn(
-                    'tipo',
-                    [
-                        'factura',
-                        'bonificacion',
-                    ]
-                )
-                ->selectRaw(
-                    'tipo, COALESCE(SUM(valor), 0) as total'
-                )
-                ->groupBy('tipo')
-                ->lockForUpdate()
-                ->get()
-                ->keyBy('tipo');
-
-            /*
-            |--------------------------------------------------------------------------
-            | Calcular importes pendientes de reversión
-            |--------------------------------------------------------------------------
-            */
-
-            $cashbackOriginal = 0.0;
-            $bonusOriginal = 0.0;
-
-            foreach ($originalTransactions as $transaction) {
-
-                if ($transaction->tipo === 'factura') {
-
-                    $cashbackOriginal +=
-                        (float) $transaction->valor;
-                }
-
-                if ($transaction->tipo === 'bonificacion') {
-
-                    $bonusOriginal +=
-                        (float) $transaction->valor;
-                }
-            }
-
-            $cashbackRevertido =
-                isset($reversedTransactions['factura'])
-                ? (float) $reversedTransactions['factura']->total
-                : 0.0;
-
-            $bonusRevertido =
-                isset($reversedTransactions['bonificacion'])
-                ? (float) $reversedTransactions['bonificacion']->total
-                : 0.0;
-
-            $cashbackPendiente = round(
-                $cashbackOriginal - $cashbackRevertido,
-                2
+            $this->reverseInvoiceInternal(
+                $invoice,
+                $motivo
             );
-
-            $bonusPendiente = round(
-                $bonusOriginal - $bonusRevertido,
-                2
-            );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Nada pendiente
-            |--------------------------------------------------------------------------
-            */
-
-            if (
-                $cashbackPendiente <= 0 &&
-                $bonusPendiente <= 0
-            ) {
-                return;
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Bloquear usuario
-            |--------------------------------------------------------------------------
-            |
-            | Es fundamental para evitar que dos operaciones financieras
-            | modifiquen el saldo simultáneamente.
-            |
-            */
-
-            $user = User::query()
-                ->whereKey($user->id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            /*
-            |--------------------------------------------------------------------------
-            | Revertir cashback principal
-            |--------------------------------------------------------------------------
-            */
-
-            if ($cashbackPendiente > 0) {
-
-                $user->cashback_total =
-                    round(
-                        (float) $user->cashback_total
-                            - $cashbackPendiente,
-                        2
-                    );
-
-                $user->cashback_available =
-                    round(
-                        (float) $user->cashback_available
-                            - $cashbackPendiente,
-                        2
-                    );
-
-                $user->save();
-
-                /*
-                |----------------------------------------------------------------------
-                | Registrar egreso de reversión
-                |----------------------------------------------------------------------
-                */
-
-                CashbackTransaction::create([
-                    'user_id' =>
-                    $user->id,
-
-                    'invoice_id' =>
-                    $invoice->id,
-
-                    'cashback_campaign_id' =>
-                    $invoice->cashback_campaign_id,
-
-                    'tipo' =>
-                    'factura',
-
-                    'movimiento' =>
-                    'egreso',
-
-                    'valor' =>
-                    $cashbackPendiente,
-
-                    'saldo_despues' =>
-                    $user->cashback_available,
-
-                    'descripcion' =>
-                    'Reversión de cashback de la factura '
-                        . $invoice->numero_factura_original
-                        . ($motivo
-                            ? ' - Motivo: ' . $motivo
-                            : ''),
-                ]);
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Revertir bono
-            |--------------------------------------------------------------------------
-            */
-
-            if ($bonusPendiente > 0) {
-
-                $user->cashback_total =
-                    round(
-                        (float) $user->cashback_total
-                            - $bonusPendiente,
-                        2
-                    );
-
-                $user->cashback_available =
-                    round(
-                        (float) $user->cashback_available
-                            - $bonusPendiente,
-                        2
-                    );
-
-                $user->save();
-
-                /*
-                |----------------------------------------------------------------------
-                | Registrar egreso de reversión
-                |----------------------------------------------------------------------
-                */
-
-                CashbackTransaction::create([
-                    'user_id' =>
-                    $user->id,
-
-                    'invoice_id' =>
-                    $invoice->id,
-
-                    'cashback_campaign_id' =>
-                    $invoice->cashback_campaign_id,
-
-                    'tipo' =>
-                    'bonificacion',
-
-                    'movimiento' =>
-                    'egreso',
-
-                    'valor' =>
-                    $bonusPendiente,
-
-                    'saldo_despues' =>
-                    $user->cashback_available,
-
-                    'descripcion' =>
-                    'Reversión del bono de primera factura '
-                        . $invoice->numero_factura_original
-                        . ($motivo
-                            ? ' - Motivo: ' . $motivo
-                            : ''),
-                ]);
-            }
         });
     }
 
     /**
-     * Validaciones.
+     * Reversión interna de cashback.
+     *
+     * Este método NO abre una nueva transacción.
+     *
+     * Debe utilizarse cuando la operación ya está protegida
+     * por una transacción superior.
+     *
+     * @throws Exception
+     */
+    public function reverseInvoiceInternal(
+        Invoice $invoice,
+        ?string $motivo = null
+    ): void {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Bloquear factura
+        |--------------------------------------------------------------------------
+        */
+
+        $invoice = Invoice::query()
+            ->whereKey($invoice->id)
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Relaciones
+        |--------------------------------------------------------------------------
+        */
+
+        $invoice->loadMissing([
+            'user',
+            'cashbackCampaign',
+        ]);
+
+        $user = $invoice->user;
+
+        if (!$user) {
+            throw new Exception(
+                'La factura no tiene usuario.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Buscar movimientos originales de la factura
+        |--------------------------------------------------------------------------
+        |
+        | Solamente consideramos ingresos originales.
+        |
+        */
+
+        $originalTransactions =
+            CashbackTransaction::query()
+            ->where(
+                'invoice_id',
+                $invoice->id
+            )
+            ->where(
+                'user_id',
+                $user->id
+            )
+            ->where(
+                'movimiento',
+                'ingreso'
+            )
+            ->whereIn(
+                'tipo',
+                [
+                    'factura',
+                    'bonificacion',
+                ]
+            )
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | No hay movimientos que revertir
+        |--------------------------------------------------------------------------
+        |
+        | Esto ocurre, por ejemplo, al anular una factura que todavía
+        | estaba "procesando".
+        |
+        | En ese caso simplemente no hay dinero que devolver.
+        |
+        */
+
+        if ($originalTransactions->isEmpty()) {
+            return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Buscar reversiones anteriores
+        |--------------------------------------------------------------------------
+        */
+
+        $reversedTransactions =
+            CashbackTransaction::query()
+            ->where(
+                'invoice_id',
+                $invoice->id
+            )
+            ->where(
+                'user_id',
+                $user->id
+            )
+            ->where(
+                'movimiento',
+                'egreso'
+            )
+            ->whereIn(
+                'tipo',
+                [
+                    'factura',
+                    'bonificacion',
+                ]
+            )
+            ->selectRaw(
+                'tipo, COALESCE(SUM(valor), 0) as total'
+            )
+            ->groupBy('tipo')
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('tipo');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Calcular importes originales
+        |--------------------------------------------------------------------------
+        */
+
+        $cashbackOriginal = 0.0;
+        $bonusOriginal = 0.0;
+
+        foreach ($originalTransactions as $transaction) {
+
+            if ($transaction->tipo === 'factura') {
+
+                $cashbackOriginal +=
+                    (float) $transaction->valor;
+            }
+
+            if ($transaction->tipo === 'bonificacion') {
+
+                $bonusOriginal +=
+                    (float) $transaction->valor;
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Calcular importes ya revertidos
+        |--------------------------------------------------------------------------
+        */
+
+        $cashbackRevertido =
+            isset($reversedTransactions['factura'])
+            ? (float) $reversedTransactions['factura']->total
+            : 0.0;
+
+        $bonusRevertido =
+            isset($reversedTransactions['bonificacion'])
+            ? (float) $reversedTransactions['bonificacion']->total
+            : 0.0;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pendiente de reversión
+        |--------------------------------------------------------------------------
+        */
+
+        $cashbackPendiente = round(
+            $cashbackOriginal - $cashbackRevertido,
+            2
+        );
+
+        $bonusPendiente = round(
+            $bonusOriginal - $bonusRevertido,
+            2
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Evitar doble reversión
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $cashbackPendiente <= 0 &&
+            $bonusPendiente <= 0
+        ) {
+            return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Bloquear usuario
+        |--------------------------------------------------------------------------
+        */
+
+        $user = User::query()
+            ->whereKey($user->id)
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Revertir cashback principal
+        |--------------------------------------------------------------------------
+        */
+
+        if ($cashbackPendiente > 0) {
+
+            $user->cashback_total =
+                round(
+                    (float) $user->cashback_total
+                        - $cashbackPendiente,
+                    2
+                );
+
+            $user->cashback_available =
+                round(
+                    (float) $user->cashback_available
+                        - $cashbackPendiente,
+                    2
+                );
+
+            $user->save();
+
+            CashbackTransaction::create([
+                'user_id' =>
+                $user->id,
+
+                'invoice_id' =>
+                $invoice->id,
+
+                'cashback_campaign_id' =>
+                $invoice->cashback_campaign_id,
+
+                'tipo' =>
+                'factura',
+
+                'movimiento' =>
+                'egreso',
+
+                'valor' =>
+                $cashbackPendiente,
+
+                'saldo_despues' =>
+                $user->cashback_available,
+
+                'descripcion' =>
+                'Reversión de cashback de la factura '
+                    . $invoice->numero_factura_original
+                    . ($motivo
+                        ? ' - Motivo: ' . $motivo
+                        : ''),
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Revertir bono
+        |--------------------------------------------------------------------------
+        */
+
+        if ($bonusPendiente > 0) {
+
+            $user->cashback_total =
+                round(
+                    (float) $user->cashback_total
+                        - $bonusPendiente,
+                    2
+                );
+
+            $user->cashback_available =
+                round(
+                    (float) $user->cashback_available
+                        - $bonusPendiente,
+                    2
+                );
+
+            $user->save();
+
+            CashbackTransaction::create([
+                'user_id' =>
+                $user->id,
+
+                'invoice_id' =>
+                $invoice->id,
+
+                'cashback_campaign_id' =>
+                $invoice->cashback_campaign_id,
+
+                'tipo' =>
+                'bonificacion',
+
+                'movimiento' =>
+                'egreso',
+
+                'valor' =>
+                $bonusPendiente,
+
+                'saldo_despues' =>
+                $user->cashback_available,
+
+                'descripcion' =>
+                'Reversión del bono de primera factura '
+                    . $invoice->numero_factura_original
+                    . ($motivo
+                        ? ' - Motivo: ' . $motivo
+                        : ''),
+            ]);
+        }
+    }
+
+    /**
+     * Validaciones para generar cashback.
      */
     private function validateInvoice(
         Invoice $invoice,
@@ -521,19 +659,20 @@ class CashbackService
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Evitar generar cashback dos veces
-        |--------------------------------------------------------------------------
-        */
 
-        if ($invoice->cashback_generado > 0) {
+        if (
+            $invoice->estado === 'confirmada'
+            && (float) $invoice->cashback_generado > 0
+        ) {
             throw new Exception(
                 'La factura ya generó cashback.'
             );
         }
 
-        if ($invoice->total_productos_participantes <= 0) {
+        if (
+            (float) $invoice->total_productos_participantes
+            <= 0
+        ) {
             throw new Exception(
                 'No existen productos participantes.'
             );
@@ -544,10 +683,6 @@ class CashbackService
      * Bono primera factura.
      *
      * Se calcula sobre el saldo neto de bonificaciones.
-     *
-     * Una bonificación que fue completamente revertida
-     * no impide que posteriormente pueda existir una
-     * nueva primera factura válida.
      */
     private function calculateFirstInvoiceBonus(
         User $user
@@ -654,10 +789,6 @@ class CashbackService
             'valor' =>
             $cashback,
 
-            /*
-            | El saldo antes del bono corresponde al saldo actual
-            | menos el bono que acaba de agregarse.
-            */
             'saldo_despues' =>
             $user->cashback_available - $bonus,
 

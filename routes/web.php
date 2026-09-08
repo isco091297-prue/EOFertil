@@ -158,6 +158,10 @@ Route::middleware([
         'invoices/{invoice}/approve',
         [InvoiceController::class, 'approve']
     )->name('invoices.approve');
+    Route::post(
+        'invoices/{invoice}/annul',
+        [InvoiceController::class, 'annul']
+    )->name('invoices.annul');
 
     /*
     |--------------------------------------------------------------------------
