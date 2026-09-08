@@ -438,7 +438,7 @@
 
                         <img src="{{ asset('storage/' . $invoice->foto_factura) }}"
                             alt="Foto de factura {{ $invoice->numero_factura_original }}"
-                            class="max-h-[600px] max-w-full rounded-xl border object-contain">
+                            class=" max-w-full rounded-xl border object-contain">
 
                     </a>
 
@@ -619,7 +619,7 @@
 ==================================================== --}}
 
                     <div id="annul-modal"
-                        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                        class=" fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
 
                         <div class="w-full max-w-lg rounded-2xl bg-white shadow-2xl p-6">
 
@@ -632,7 +632,7 @@
                                 <button type="button"
                                     onclick="document.getElementById('annul-modal').classList.add('hidden')"
                                     class="text-gray-400 hover:text-gray-700 text-2xl">
-                                    ×
+                                    x
                                 </button>
 
                             </div>
