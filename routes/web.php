@@ -21,6 +21,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\ZoneController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\GuideUsageController;
 
 Route::middleware('guest')->group(function () {
 
@@ -317,7 +318,10 @@ Route::middleware([
         'protocols',
         ProtocolController::class
     );
-
+    Route::get(
+        '/guide-usage',
+        [GuideUsageController::class, 'index']
+    )->name('guide-usage.index');
     /*
     |--------------------------------------------------------------------------
     | Logout

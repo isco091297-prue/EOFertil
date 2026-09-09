@@ -52,7 +52,9 @@
         </div>
 
         <x-menu-item route="invoices.index" icon="💰" label="Ventas" />
-        
+
+        <x-menu-item route="guide-usage.index" icon="📊" label="Uso de la Guía" />
+
         <div class="pt-6 pb-2 text-xs uppercase tracking-widest text-green-300 font-bold">
             Sistema
         </div>
