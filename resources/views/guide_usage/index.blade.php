@@ -1,5 +1,6 @@
-<x-app-layout>
+@extends('layouts.app')
 
+@section('content')
     <div class="p-6">
 
         <div class="mb-6">
@@ -529,4 +530,4 @@
 
     </div>
 
-</x-app-layout>
+@endsection
