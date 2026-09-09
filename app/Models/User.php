@@ -115,4 +115,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(CashbackTransaction::class);
     }
+    public function guideUsages(): HasMany
+    {
+        return $this->hasMany(GuideUsage::class);
+    }
 }

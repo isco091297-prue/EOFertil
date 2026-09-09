@@ -7,6 +7,7 @@ use App\Http\Resources\Guide\ProtocolGuideResource;
 use App\Services\Guide\GuideService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Models\GuideUsage;
 
 class GuideController extends Controller
 {
@@ -45,6 +46,9 @@ class GuideController extends Controller
     /**
      * GET /api/v1/guide/protocol?crop_id=1&problem_id=1
      */
+    /**
+     * GET /api/v1/guide/protocol?crop_id=1&problem_id=1
+     */
     public function protocol(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -63,6 +67,20 @@ class GuideController extends Controller
                 'message' => 'No existe un receta para este problema.',
             ], 404);
         }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Registrar consulta de la Guía
+    |--------------------------------------------------------------------------
+    |
+    | Solo registramos la consulta cuando existe una receta válida.
+    |
+    */
+        GuideUsage::create([
+            'user_id' => $request->user()->id,
+            'crop_id' => $validated['crop_id'],
+            'problem_id' => $validated['problem_id'],
+        ]);
 
         return response()->json([
             'success' => true,
