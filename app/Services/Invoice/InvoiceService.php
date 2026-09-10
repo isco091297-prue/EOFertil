@@ -5,7 +5,6 @@ namespace App\Services\Invoice;
 use App\Models\Invoice;
 use Illuminate\Support\Facades\DB;
 use App\Models\Branch;
-use App\Models\CashbackTransaction;
 use App\Models\CashbackCampaign;
 use App\Models\Product;
 use App\Models\User;
@@ -17,17 +16,24 @@ class InvoiceService
     /**
      * Registrar una factura.
      *
+     * La factura queda en estado "procesando".
+     *
+     * En este momento:
+     *
+     * - Se crean los productos.
+     * - Se calcula el total de la factura.
+     * - Se calcula el total de productos participantes.
+     * - Se calcula el cashback correspondiente.
+     * - El cashback queda guardado en la factura.
+     *
      * IMPORTANTE:
      *
-     * En esta etapa registrar una factura NO genera cashback
-     * ni procesa rankings.
+     * El cashback todavía NO se acredita al usuario.
+     * No se crea ninguna transacción de cashback.
+     * No se modifica el acumulado ni el ranking.
      *
-     * La factura queda en estado "procesando" para que el
-     * administrador pueda revisarla y posteriormente aprobarla.
-     *
-     * El cashback y el acumulado/ranking serán procesados por:
-     *
-     * InvoiceAdminService::approve()
+     * La acreditación financiera ocurre únicamente cuando
+     * administración aprueba la factura.
      *
      * @throws Exception
      */
@@ -36,6 +42,25 @@ class InvoiceService
         return DB::transaction(function () use ($data) {
 
             $this->validateData($data);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Determinar si esta es la primera factura del usuario
+            |--------------------------------------------------------------------------
+            |
+            | La animación de primera factura se muestra solamente cuando
+            | realmente no existía otra factura registrada anteriormente.
+            |
+            | Esto NO genera todavía el bono económico.
+            |
+            */
+
+            $tieneFacturasAnteriores = Invoice::query()
+                ->where('user_id', $data['user_id'])
+                ->exists();
+
+            $esPrimeraFactura =
+                !$tieneFacturasAnteriores;
 
             /*
             |--------------------------------------------------------------------------
@@ -69,27 +94,47 @@ class InvoiceService
 
             /*
             |--------------------------------------------------------------------------
-            | IMPORTANTE
+            | Calcular cashback
             |--------------------------------------------------------------------------
             |
-            | NO generar cashback aquí.
+            | El cálculo se realiza inmediatamente para que la aplicación
+            | móvil pueda mostrar al usuario el cashback correspondiente
+            | a los valores que acaba de registrar.
             |
-            | NO procesar rankings aquí.
+            | IMPORTANTE:
             |
-            | La factura queda en "procesando".
+            | Esto solamente guarda el cálculo.
             |
-            | Esto permite que administración revise:
-            |
-            | - fotografía
-            | - número
-            | - fecha
-            | - productos
-            | - valores
-            | - total
-            |
-            | antes de generar cualquier efecto financiero.
+            | NO acredita dinero.
+            | NO crea transacciones.
+            | NO modifica el saldo.
+            | NO modifica el ranking.
             |
             */
+
+            $campaign = CashbackCampaign::findOrFail(
+                $data['cashback_campaign_id']
+            );
+
+            $cashback = round(
+                (
+                    (float) $totales['total_productos_participantes']
+                    *
+                    (float) $campaign->porcentaje
+                ) / 100,
+                2
+            );
+
+            $invoice->update([
+                'porcentaje_cashback' =>
+                $campaign->porcentaje,
+
+                'cashback_generado' =>
+                $cashback,
+
+                'estado' =>
+                'procesando',
+            ]);
 
             /*
             |--------------------------------------------------------------------------
@@ -98,32 +143,34 @@ class InvoiceService
             */
 
             $updatedInvoice = $invoice->fresh([
-                'cashbackCampaign:id,nombre',
+                'cashbackCampaign:id,nombre,porcentaje',
                 'branch:id,name',
                 'items.product:id,name',
             ]);
 
             /*
             |--------------------------------------------------------------------------
-            | Primera factura
+            | Datos para las animaciones de la aplicación móvil
             |--------------------------------------------------------------------------
             |
-            | IMPORTANTE:
+            | logro_primera_factura solamente indica que esta factura
+            | corresponde a la primera factura registrada por el usuario.
             |
-            | El bono de primera factura todavía NO se genera aquí.
+            | El bono económico de $5 NO se genera aquí.
             |
-            | Se generará cuando administración apruebe la factura.
+            | Ese bono será generado únicamente cuando administración
+            | apruebe la factura.
             |
             */
 
             $updatedInvoice->setAttribute(
                 'logro_primera_factura',
-                false
+                $esPrimeraFactura
             );
 
             $updatedInvoice->setAttribute(
                 'bono_primera_factura',
-                0
+                0.00
             );
 
             return $updatedInvoice;
@@ -296,13 +343,6 @@ class InvoiceService
         |--------------------------------------------------------------------------
         | Validar porcentaje
         |--------------------------------------------------------------------------
-        |
-        | Las campañas Cashback necesitan porcentaje.
-        |
-        | Las campañas ranking_accumulated NO necesitan porcentaje,
-        | porque su objetivo es acumular ventas para determinar
-        | el ganador.
-        |
         */
 
         if (
@@ -400,30 +440,39 @@ class InvoiceService
         );
 
         return Invoice::create([
-            'cashback_campaign_id' => $campaign->id,
+            'cashback_campaign_id' =>
+            $campaign->id,
 
-            'user_id' => $data['user_id'],
+            'user_id' =>
+            $data['user_id'],
 
-            'branch_id' => $data['branch_id'],
+            'branch_id' =>
+            $data['branch_id'],
 
             'numero_factura_original' =>
             $data['numero_factura_original'],
 
-            'numero_factura_normalizado' => preg_replace(
+            'numero_factura_normalizado' =>
+            preg_replace(
                 '/\D/',
                 '',
                 $data['numero_factura_original']
             ),
 
-            'fecha_factura' => $data['fecha_factura'],
+            'fecha_factura' =>
+            $data['fecha_factura'],
 
-            'total_factura' => 0,
+            'total_factura' =>
+            0,
 
-            'total_productos_participantes' => 0,
+            'total_productos_participantes' =>
+            0,
 
-            'porcentaje_cashback' => $campaign->porcentaje,
+            'porcentaje_cashback' =>
+            $campaign->porcentaje,
 
-            'cashback_generado' => 0,
+            'cashback_generado' =>
+            0,
 
             'foto_factura' =>
             $data['foto_factura'] ?? null,
@@ -434,16 +483,8 @@ class InvoiceService
             'origen' =>
             $data['origen'] ?? 'manual',
 
-            /*
-            |--------------------------------------------------------------------------
-            | Estado inicial
-            |--------------------------------------------------------------------------
-            |
-            | La factura queda pendiente de revisión administrativa.
-            |
-            */
-
-            'estado' => 'procesando',
+            'estado' =>
+            'procesando',
         ]);
     }
 
@@ -459,19 +500,29 @@ class InvoiceService
 
         foreach ($items as $item) {
 
+            $valor = round(
+                (float) $item['valor'],
+                2
+            );
+
             InvoiceItem::create([
-                'invoice_id' => $invoice->id,
+                'invoice_id' =>
+                $invoice->id,
 
                 'product_id' =>
                 $item['product_id'],
 
                 'valor' =>
-                $item['valor'],
+                $valor,
             ]);
 
-            $totalFactura +=
-                $item['valor'];
+            $totalFactura += $valor;
         }
+
+        $totalFactura = round(
+            $totalFactura,
+            2
+        );
 
         return [
             'total_factura' =>

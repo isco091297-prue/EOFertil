@@ -419,4 +419,28 @@ class CashbackController extends Controller
             );
         }
     }
+    /**
+     * Facturas del usuario autenticado.
+     */
+    public function invoices(Request $request)
+    {
+        try {
+
+            $invoices = $this->cashbackModuleService->invoices(
+                $request->user()
+            );
+
+            return ApiResponse::success(
+                InvoiceResource::collection($invoices),
+                'Facturas obtenidas correctamente.'
+            );
+        } catch (Exception $e) {
+
+            return ApiResponse::error(
+                $e->getMessage(),
+                null,
+                500
+            );
+        }
+    }
 }

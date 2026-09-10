@@ -11,19 +11,19 @@ use Exception;
 
 class CashbackModuleService
 {
-   /**
- * Campaña Cashback vigente.
- *
- * Esta campaña es independiente del ranking acumulado.
- * El ranking acumulado se consulta mediante su propio endpoint.
- */
-public function currentCampaign(): ?CashbackCampaign
-{
-    return CashbackCampaign::vigentes()
-        ->where('campaign_type', 'cashback')
-        ->latest('fecha_inicio')
-        ->first();
-}
+    /**
+     * Campaña Cashback vigente.
+     *
+     * Esta campaña es independiente del ranking acumulado.
+     * El ranking acumulado se consulta mediante su propio endpoint.
+     */
+    public function currentCampaign(): ?CashbackCampaign
+    {
+        return CashbackCampaign::vigentes()
+            ->where('campaign_type', 'cashback')
+            ->latest('fecha_inicio')
+            ->first();
+    }
 
     /**
      * Saldos del usuario.
@@ -79,7 +79,37 @@ public function currentCampaign(): ?CashbackCampaign
                 $perPage
             );
     }
+    /**
+     * Facturas registradas por el usuario.
+     *
+     * Incluye facturas:
+     *
+     * - procesando
+     * - confirmada
+     * - anulada
+     *
+     * Se ordenan de la más reciente a la más antigua.
+     */
+    public function invoices(
+        User $user,
+        int $perPage = 15
+    ): LengthAwarePaginator {
 
+        $this->validateUser($user);
+
+        return Invoice::query()
+            ->where(
+                'user_id',
+                $user->id
+            )
+            ->with([
+                'cashbackCampaign:id,nombre',
+                'branch:id,name',
+                'items.product:id,name',
+            ])
+            ->latest()
+            ->paginate($perPage);
+    }
     /**
      * Factura.
      */

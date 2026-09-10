@@ -161,6 +161,10 @@ Route::prefix('v1')->group(function () {
             [CashbackController::class, 'accumulatedRanking']
         );
         Route::get(
+            '/cashback/invoices',
+            [CashbackController::class, 'invoices']
+        );
+        Route::get(
             '/cashback/invoices/{invoice}',
             [CashbackController::class, 'showInvoice']
         );

@@ -137,45 +137,6 @@ class InvoiceAdminService
     }
 
 
-    /**
-     * ================================================================
-     * MODIFICAR FACTURA
-     * ================================================================
-     *
-     * IMPORTANTE:
-     *
-     * SOLO se puede modificar una factura que todavía esté
-     * en estado "procesando".
-     *
-     * La modificación NO aprueba la factura.
-     *
-     * Flujo:
-     *
-     * procesando
-     *      ↓
-     * modificar
-     *      ↓
-     * actualizar valores de productos
-     *      ↓
-     * recalcular total participante
-     *      ↓
-     * recalcular cashback
-     *      ↓
-     * sigue procesando
-     *
-     *
-     * El administrador NO modifica:
-     *
-     * - número de factura
-     * - fecha
-     * - total general de factura
-     * - campaña
-     * - porcentaje de campaña
-     * - estado
-     * - cashback manualmente
-     *
-     * Solamente modifica los valores de los productos.
-     */
     public function update(
         Invoice $invoice,
         array $data,
@@ -200,12 +161,6 @@ class InvoiceAdminService
                 ->firstOrFail();
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Solo se pueden modificar facturas pendientes
-            |--------------------------------------------------------------------------
-            */
-
             if ($invoice->estado !== 'procesando') {
 
                 if ($invoice->estado === 'confirmada') {
@@ -228,11 +183,6 @@ class InvoiceAdminService
             }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Snapshot anterior
-            |--------------------------------------------------------------------------
-            */
 
             $estadoAnterior = $invoice->estado;
 
@@ -241,15 +191,6 @@ class InvoiceAdminService
             );
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Validar productos
-            |--------------------------------------------------------------------------
-            |
-            | El formulario solamente debe enviar valores correspondientes
-            | a los invoice_items existentes.
-            |
-            */
 
             $itemsData = $data['items'] ?? [];
 
@@ -262,11 +203,7 @@ class InvoiceAdminService
             }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Actualizar únicamente valores de productos
-            |--------------------------------------------------------------------------
-            */
+
 
             foreach ($itemsData as $itemId => $itemData) {
 
@@ -275,14 +212,6 @@ class InvoiceAdminService
                         'id',
                         (int) $itemId
                     );
-
-
-                /*
-                |--------------------------------------------------------------
-                | Si llega un producto que no pertenece a la factura,
-                | rechazamos la operación.
-                |--------------------------------------------------------------
-                */
 
                 if (!$item) {
 
@@ -323,85 +252,31 @@ class InvoiceAdminService
             }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Recalcular automáticamente total participante
-            |--------------------------------------------------------------------------
-            |
-            | El administrador NO escribe este valor.
-            |
-            | El sistema suma todos los productos registrados.
-            |
-            */
 
-            $totalParticipantes = round(
-                (float) $invoice->items()->sum('valor'),
-                2
-            );
 
+            $totalParticipantes = round((float) $invoice->items()->sum('valor'), 2);
+
+
+            $invoice->total_factura =
+                $totalParticipantes;
 
             $invoice->total_productos_participantes =
                 $totalParticipantes;
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | La factura continúa pendiente
-            |--------------------------------------------------------------------------
-            */
-
-            $invoice->estado = 'procesando';
-
-            /*
-            |--------------------------------------------------------------------------
-            | Limpiar valores financieros anteriores
-            |--------------------------------------------------------------------------
-            |
-            | Si la factura estaba pendiente, este valor únicamente
-            | representaba un cálculo anterior.
-            |
-            | Todavía NO existe una acreditación financiera.
-            |
-            */
-
-            $invoice->cashback_generado = 0;
-
-            $invoice->porcentaje_cashback = 0;
-
-
-            $invoice->save();
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Recalcular cashback sin acreditar
-            |--------------------------------------------------------------------------
-            |
-            | CashbackService:
-            |
-            | - utiliza la campaña ORIGINAL de la factura;
-            | - calcula el porcentaje;
-            | - guarda el cashback calculado;
-            | - NO modifica el saldo;
-            | - NO crea transacciones;
-            | - mantiene la factura procesando.
-            |
-            */
 
             $invoice = $this->cashbackService
                 ->recalculatePending(
                     $invoice->fresh()
                 );
 
+            $invoice->estado = 'procesando';
 
-            /*
-            |--------------------------------------------------------------------------
-            | Reconstruir acumulado / ranking
-            |--------------------------------------------------------------------------
-            |
-            | Las facturas procesando NO cuentan.
-            |
-            */
+            $invoice->cashback_generado = 0;
+
+            $invoice->porcentaje_cashback = 0;
+
+            $invoice->save();
 
             $this->rebuildRankingsForUserInternal(
                 $invoice->user_id
@@ -410,12 +285,6 @@ class InvoiceAdminService
 
             $invoice->refresh();
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Auditoría
-            |--------------------------------------------------------------------------
-            */
 
             $this->createAudit(
                 invoice: $invoice,
@@ -433,26 +302,6 @@ class InvoiceAdminService
         });
     }
 
-
-    /**
-     * ================================================================
-     * ANULAR FACTURA
-     * ================================================================
-     *
-     * IMPORTANTE:
-     *
-     * La anulación administrativa solamente puede realizarse
-     * mientras la factura esté pendiente.
-     *
-     * procesando
-     *      ↓
-     * anular
-     *      ↓
-     * anulada
-     *
-     * Una factura confirmada ya no tiene acciones administrativas
-     * disponibles.
-     */
     public function annul(
         Invoice $invoice,
         int $adminUserId,
@@ -485,12 +334,6 @@ class InvoiceAdminService
                 ->firstOrFail();
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Solo se puede anular una factura pendiente
-            |--------------------------------------------------------------------------
-            */
-
             if ($invoice->estado !== 'procesando') {
 
                 if ($invoice->estado === 'confirmada') {
@@ -520,15 +363,6 @@ class InvoiceAdminService
             );
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Una factura pendiente no tiene cashback acreditado
-            |--------------------------------------------------------------------------
-            |
-            | Por seguridad dejamos sus valores financieros en cero.
-            |
-            */
-
             $invoice->cashback_generado = 0;
 
             $invoice->porcentaje_cashback = 0;
@@ -538,15 +372,6 @@ class InvoiceAdminService
             $invoice->save();
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Reconstruir acumulado / ranking
-            |--------------------------------------------------------------------------
-            |
-            | Una factura anulada nunca debe contar.
-            |
-            */
-
             $this->rebuildRankingsForUserInternal(
                 $invoice->user_id
             );
@@ -554,12 +379,6 @@ class InvoiceAdminService
 
             $invoice->refresh();
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Auditoría
-            |--------------------------------------------------------------------------
-            */
 
             $this->createAudit(
                 invoice: $invoice,
@@ -577,12 +396,6 @@ class InvoiceAdminService
         });
     }
 
-
-    /**
-     * ================================================================
-     * RECONSTRUIR RANKINGS
-     * ================================================================
-     */
     public function rebuildRankingsForUser(
         int $userId
     ): void {
@@ -595,12 +408,6 @@ class InvoiceAdminService
         });
     }
 
-
-    /**
-     * ================================================================
-     * RECONSTRUCCIÓN INTERNA DE RANKINGS
-     * ================================================================
-     */
     protected function rebuildRankingsForUserInternal(
         int $userId
     ): void {
@@ -633,13 +440,6 @@ class InvoiceAdminService
         ) {
             return;
         }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Obtener campañas relevantes
-        |--------------------------------------------------------------------------
-        */
 
         $campaigns = CashbackCampaign::query()
             ->where(function ($query) use (
@@ -919,12 +719,6 @@ class InvoiceAdminService
         $scopeQuery =
             $campaign->scopes();
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Warehouse
-        |--------------------------------------------------------------------------
-        */
 
         if (
             $campaign->participant_type === 'warehouse'
