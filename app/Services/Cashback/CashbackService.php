@@ -224,123 +224,94 @@ class CashbackService
 
         return $invoice->fresh();
     }
-
-    /**
-     * Corrige financieramente el cashback de una factura pendiente.
-     *
-     * La factura ya recibió el cashback original al registrarse.
-     *
-     * Ejemplo:
-     *
-     * Original: $100 → $1.00
-     * Corregida: $70 → $0.70
-     *
-     * Se revierte $1.00 y se acredita $0.70.
-     */
-    public function adjustPendingCashback(
+    public function creditCorrectedCashbackInternal(
         Invoice $invoice
     ): Invoice {
 
-        return DB::transaction(function () use ($invoice) {
+        $invoice->loadMissing([
+            'user',
+            'cashbackCampaign',
+        ]);
 
-            $invoice = Invoice::query()
-                ->with([
-                    'user',
-                    'cashbackCampaign',
-                    'branch',
-                ])
-                ->whereKey($invoice->id)
-                ->lockForUpdate()
-                ->firstOrFail();
+        $user = $invoice->user;
+        $campaign = $invoice->cashbackCampaign;
 
-            $user = $invoice->user;
-            $campaign = $invoice->cashbackCampaign;
+        $this->validateInvoice(
+            $invoice,
+            $campaign,
+            $user
+        );
 
-            $this->validateInvoice(
-                $invoice,
-                $campaign,
-                $user
+        if ($invoice->estado !== 'procesando') {
+            throw new Exception(
+                'Solo se puede acreditar una factura pendiente.'
             );
+        }
 
-            if ($invoice->estado !== 'procesando') {
-                throw new Exception(
-                    'Solo se puede corregir una factura pendiente.'
-                );
-            }
+        $cashback = $this->calculateCashback(
+            $invoice,
+            $campaign
+        );
 
-            $this->reverseInvoiceCashbackOnlyInternal(
-                $invoice
-            );
+        $invoice->update([
+            'porcentaje_cashback' =>
+            $campaign->porcentaje,
 
-            $cashback = $this->calculateCashback(
-                $invoice,
-                $campaign
-            );
+            'cashback_generado' =>
+            $cashback,
 
-            $invoice->update([
-                'porcentaje_cashback' =>
-                $campaign->porcentaje,
+            'estado' =>
+            'procesando',
+        ]);
 
-                'cashback_generado' =>
-                $cashback,
+        $user = User::query()
+            ->whereKey($user->id)
+            ->lockForUpdate()
+            ->firstOrFail();
 
-                'estado' =>
-                'procesando',
-            ]);
+        $user->cashback_total = round(
+            (float) $user->cashback_total
+                + $cashback,
+            2
+        );
 
-            $user = User::query()
-                ->whereKey($user->id)
-                ->lockForUpdate()
-                ->firstOrFail();
+        $user->cashback_available = round(
+            (float) $user->cashback_available
+                + $cashback,
+            2
+        );
 
-            $user->cashback_total = round(
-                (float) $user->cashback_total
-                    + $cashback,
-                2
-            );
+        $user->save();
 
-            $user->cashback_available = round(
-                (float) $user->cashback_available
-                    + $cashback,
-                2
-            );
+        CashbackTransaction::create([
+            'user_id' =>
+            $user->id,
 
-            $user->save();
+            'invoice_id' =>
+            $invoice->id,
 
-            CashbackTransaction::create([
-                'user_id' =>
-                $user->id,
+            'cashback_campaign_id' =>
+            $campaign->id,
 
-                'invoice_id' =>
-                $invoice->id,
+            'tipo' =>
+            'factura',
 
-                'cashback_campaign_id' =>
-                $campaign->id,
+            'movimiento' =>
+            'ingreso',
 
-                'tipo' =>
-                'factura',
+            'valor' =>
+            $cashback,
 
-                'movimiento' =>
-                'ingreso',
+            'saldo_despues' =>
+            $user->cashback_available,
 
-                'valor' =>
-                $cashback,
+            'descripcion' =>
+            'Cashback corregido de la factura '
+                . $invoice->numero_factura_original,
+        ]);
 
-                'saldo_despues' =>
-                $user->cashback_available,
-
-                'descripcion' =>
-                'Cashback corregido de la factura '
-                    . $invoice->numero_factura_original,
-            ]);
-
-            return $invoice->fresh();
-        });
+        return $invoice->fresh();
     }
-
-    /**
-     * Calcula cashback.
-     */
     public function calculateCashback(
         Invoice $invoice,
         CashbackCampaign $campaign

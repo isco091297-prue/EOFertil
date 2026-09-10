@@ -314,7 +314,7 @@ class InvoiceAdminService
 
             $invoice =
                 $this->cashbackService
-                ->adjustPendingCashback(
+                ->creditCorrectedCashbackInternal(
                     $invoice->fresh()
                 );
 
