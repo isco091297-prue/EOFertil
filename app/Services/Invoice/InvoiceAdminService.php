@@ -265,18 +265,9 @@ class InvoiceAdminService
 
 
 
-            $invoice = $this->cashbackService
-                ->recalculatePending(
-                    $invoice->fresh()
-                );
-
-            $invoice->estado = 'procesando';
-
-            $invoice->cashback_generado = 0;
-
-            $invoice->porcentaje_cashback = 0;
-
-            $invoice->save();
+            $invoice = $this->cashbackService->recalculatePending(
+                $invoice->fresh()
+            );
 
             $this->rebuildRankingsForUserInternal(
                 $invoice->user_id
