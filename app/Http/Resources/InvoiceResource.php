@@ -90,7 +90,36 @@ class InvoiceResource extends JsonResource
                 $this->whenLoaded('items')
             ),
 
+            'movimientos' => $this->whenLoaded(
+                'cashbackTransactions',
+                fn() => $this->cashbackTransactions->map(
+                    fn(CashbackTransaction $transaction) => [
+                        'id' => $transaction->id,
+                        'tipo' => $transaction->tipo,
+                        'movimiento' => $transaction->movimiento,
+                        'valor' => (float) $transaction->valor,
+                        'saldo_despues' => (float) $transaction->saldo_despues,
+                        'descripcion' => $transaction->descripcion,
+                        'fecha' => optional($transaction->created_at)
+                            ->format('Y-m-d H:i:s'),
+                        'campania' => $transaction->cashbackCampaign
+                            ? [
+                                'id' => $transaction->cashbackCampaign->id,
+                                'nombre' => $transaction->cashbackCampaign->nombre,
+                            ]
+                            : null,
+                    ]
+                )->values()
+            ),
+
+            'auditoria' => InvoiceAuditResource::collection(
+                $this->whenLoaded('audits')
+            ),
+
             'created_at' => optional($this->created_at)
+                ->format('Y-m-d H:i:s'),
+
+            'updated_at' => optional($this->updated_at)
                 ->format('Y-m-d H:i:s'),
         ];
     }

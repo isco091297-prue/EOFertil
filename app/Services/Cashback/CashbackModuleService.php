@@ -130,6 +130,10 @@ class CashbackModuleService
 
                 'items.product',
 
+                'cashbackTransactions.cashbackCampaign',
+
+                'audits.admin',
+
             ])
 
             ->where(
