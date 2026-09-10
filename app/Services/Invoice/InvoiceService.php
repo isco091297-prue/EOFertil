@@ -10,50 +10,21 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\InvoiceItem;
 use Exception;
+use App\Services\Cashback\CashbackService;
+use App\Services\Ranking\RankingCalculatorService;
 
 class InvoiceService
 {
-    /**
-     * Registrar una factura.
-     *
-     * La factura queda en estado "procesando".
-     *
-     * En este momento:
-     *
-     * - Se crean los productos.
-     * - Se calcula el total de la factura.
-     * - Se calcula el total de productos participantes.
-     * - Se calcula el cashback correspondiente.
-     * - El cashback queda guardado en la factura.
-     *
-     * IMPORTANTE:
-     *
-     * El cashback todavía NO se acredita al usuario.
-     * No se crea ninguna transacción de cashback.
-     * No se modifica el acumulado ni el ranking.
-     *
-     * La acreditación financiera ocurre únicamente cuando
-     * administración aprueba la factura.
-     *
-     * @throws Exception
-     */
+    public function __construct(
+        protected CashbackService $cashbackService,
+        protected RankingCalculatorService $rankingCalculatorService
+    ) {}
+
     public function store(array $data): Invoice
     {
         return DB::transaction(function () use ($data) {
 
             $this->validateData($data);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Determinar si esta es la primera factura del usuario
-            |--------------------------------------------------------------------------
-            |
-            | La animación de primera factura se muestra solamente cuando
-            | realmente no existía otra factura registrada anteriormente.
-            |
-            | Esto NO genera todavía el bono económico.
-            |
-            */
 
             $tieneFacturasAnteriores = Invoice::query()
                 ->where('user_id', $data['user_id'])
@@ -62,30 +33,12 @@ class InvoiceService
             $esPrimeraFactura =
                 !$tieneFacturasAnteriores;
 
-            /*
-            |--------------------------------------------------------------------------
-            | Crear factura
-            |--------------------------------------------------------------------------
-            */
-
             $invoice = $this->createInvoice($data);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Crear productos de la factura
-            |--------------------------------------------------------------------------
-            */
 
             $totales = $this->createItems(
                 $invoice,
                 $data['items']
             );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Actualizar totales
-            |--------------------------------------------------------------------------
-            */
 
             $this->updateInvoiceTotals(
                 $invoice,
@@ -94,74 +47,33 @@ class InvoiceService
 
             /*
             |--------------------------------------------------------------------------
-            | Calcular cashback
+            | Cashback inmediato
             |--------------------------------------------------------------------------
             |
-            | El cálculo se realiza inmediatamente para que la aplicación
-            | móvil pueda mostrar al usuario el cashback correspondiente
-            | a los valores que acaba de registrar.
-            |
-            | IMPORTANTE:
-            |
-            | Esto solamente guarda el cálculo.
-            |
-            | NO acredita dinero.
-            | NO crea transacciones.
-            | NO modifica el saldo.
-            | NO modifica el ranking.
+            | El usuario recibe el cashback inmediatamente.
+            | La factura continúa en "procesando" para revisión administrativa.
             |
             */
 
-            $campaign = CashbackCampaign::findOrFail(
-                $data['cashback_campaign_id']
+            $this->cashbackService->creditPending(
+                $invoice->fresh()
             );
-
-            $cashback = round(
-                (
-                    (float) $totales['total_productos_participantes']
-                    *
-                    (float) $campaign->porcentaje
-                ) / 100,
-                2
-            );
-
-            $invoice->update([
-                'porcentaje_cashback' =>
-                $campaign->porcentaje,
-
-                'cashback_generado' =>
-                $cashback,
-
-                'estado' =>
-                'procesando',
-            ]);
 
             /*
             |--------------------------------------------------------------------------
-            | Recargar factura
+            | Ranking / acumulado
             |--------------------------------------------------------------------------
             */
+
+            $this->rankingCalculatorService->process(
+                $invoice->fresh()
+            );
 
             $updatedInvoice = $invoice->fresh([
                 'cashbackCampaign:id,nombre,porcentaje',
                 'branch:id,name',
                 'items.product:id,name',
             ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Datos para las animaciones de la aplicación móvil
-            |--------------------------------------------------------------------------
-            |
-            | logro_primera_factura solamente indica que esta factura
-            | corresponde a la primera factura registrada por el usuario.
-            |
-            | El bono económico de $5 NO se genera aquí.
-            |
-            | Ese bono será generado únicamente cuando administración
-            | apruebe la factura.
-            |
-            */
 
             $updatedInvoice->setAttribute(
                 'logro_primera_factura',
@@ -170,26 +82,17 @@ class InvoiceService
 
             $updatedInvoice->setAttribute(
                 'bono_primera_factura',
-                0.00
+                $esPrimeraFactura
+                    ? 5.00
+                    : 0.00
             );
 
             return $updatedInvoice;
         });
     }
 
-    /**
-     * Validar datos.
-     *
-     * @throws Exception
-     */
     private function validateData(array $data): void
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Usuario
-        |--------------------------------------------------------------------------
-        */
-
         if (
             !isset($data['user_id']) ||
             !is_numeric($data['user_id'])
@@ -198,12 +101,6 @@ class InvoiceService
                 'No fue posible identificar el usuario autenticado.'
             );
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Sucursal
-        |--------------------------------------------------------------------------
-        */
 
         if (
             !isset($data['branch_id']) ||
@@ -214,23 +111,11 @@ class InvoiceService
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Campaña
-        |--------------------------------------------------------------------------
-        */
-
         if (empty($data['cashback_campaign_id'])) {
             throw new Exception(
                 'Debe indicar la campaña de cashback.'
             );
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Productos
-        |--------------------------------------------------------------------------
-        */
 
         $productos = [];
 
@@ -238,37 +123,42 @@ class InvoiceService
 
             if (empty($item['product_id'])) {
                 throw new Exception(
-                    'El producto de la fila ' .
-                        ($index + 1) .
-                        ' es obligatorio.'
+                    'El producto de la fila '
+                        . ($index + 1)
+                        . ' es obligatorio.'
                 );
             }
 
             if (!isset($item['valor'])) {
                 throw new Exception(
-                    'Debe ingresar el valor del producto en la fila ' .
-                        ($index + 1) .
-                        '.'
+                    'Debe ingresar el valor del producto en la fila '
+                        . ($index + 1)
+                        . '.'
                 );
             }
 
             if (!is_numeric($item['valor'])) {
                 throw new Exception(
-                    'El valor del producto en la fila ' .
-                        ($index + 1) .
-                        ' es inválido.'
+                    'El valor del producto en la fila '
+                        . ($index + 1)
+                        . ' es inválido.'
                 );
             }
 
             if ($item['valor'] <= 0) {
                 throw new Exception(
-                    'El valor del producto en la fila ' .
-                        ($index + 1) .
-                        ' debe ser mayor que cero.'
+                    'El valor del producto en la fila '
+                        . ($index + 1)
+                        . ' debe ser mayor que cero.'
                 );
             }
 
-            if (in_array($item['product_id'], $productos)) {
+            if (
+                in_array(
+                    $item['product_id'],
+                    $productos
+                )
+            ) {
                 throw new Exception(
                     'No puede registrar el mismo producto dos veces en la misma factura.'
                 );
@@ -276,12 +166,6 @@ class InvoiceService
 
             $productos[] = $item['product_id'];
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validar usuario
-        |--------------------------------------------------------------------------
-        */
 
         $user = User::find($data['user_id']);
 
@@ -303,12 +187,6 @@ class InvoiceService
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Validar sucursal
-        |--------------------------------------------------------------------------
-        */
-
         $branch = Branch::find($data['branch_id']);
 
         if (!$branch) {
@@ -316,12 +194,6 @@ class InvoiceService
                 'La sucursal no existe.'
             );
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validar campaña
-        |--------------------------------------------------------------------------
-        */
 
         $campaign = CashbackCampaign::find(
             $data['cashback_campaign_id']
@@ -339,12 +211,6 @@ class InvoiceService
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Validar porcentaje
-        |--------------------------------------------------------------------------
-        */
-
         if (
             $campaign->campaign_type === 'cashback' &&
             $campaign->porcentaje <= 0
@@ -353,12 +219,6 @@ class InvoiceService
                 'La campaña de cashback no tiene un porcentaje válido.'
             );
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validar vigencia
-        |--------------------------------------------------------------------------
-        */
 
         $today = now()->startOfDay();
 
@@ -373,12 +233,6 @@ class InvoiceService
                 'La campaña de cashback ya finalizó.'
             );
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validar factura repetida
-        |--------------------------------------------------------------------------
-        */
 
         $invoiceExists = Invoice::where(
             'branch_id',
@@ -396,12 +250,6 @@ class InvoiceService
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Validar productos existentes y activos
-        |--------------------------------------------------------------------------
-        */
-
         $products = Product::whereIn(
             'id',
             array_column(
@@ -414,7 +262,8 @@ class InvoiceService
 
         foreach ($data['items'] as $item) {
 
-            $product = $products[$item['product_id']] ?? null;
+            $product =
+                $products[$item['product_id']] ?? null;
 
             if (!$product) {
                 throw new Exception(
@@ -430,9 +279,6 @@ class InvoiceService
         }
     }
 
-    /**
-     * Crear factura.
-     */
     private function createInvoice(array $data): Invoice
     {
         $campaign = CashbackCampaign::findOrFail(
@@ -488,9 +334,6 @@ class InvoiceService
         ]);
     }
 
-    /**
-     * Crear productos de la factura.
-     */
     private function createItems(
         Invoice $invoice,
         array $items
@@ -533,9 +376,6 @@ class InvoiceService
         ];
     }
 
-    /**
-     * Actualizar totales de la factura.
-     */
     private function updateInvoiceTotals(
         Invoice $invoice,
         array $totales
