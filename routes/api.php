@@ -9,7 +9,7 @@ use App\Http\Controllers\Api\V1\GuideController;
 use App\Http\Controllers\Api\V1\CashbackController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
-
+use App\Http\Controllers\Api\V1\AvisoController;
 Route::prefix('v1')->group(function () {
 
     /*
@@ -81,7 +81,10 @@ Route::prefix('v1')->group(function () {
         | Perfil
         |--------------------------------------------------------------------------
         */
-
+Route::get(
+    '/avisos',
+    [AvisoController::class, 'index']
+);
         Route::get(
             '/profile',
             [ProfileController::class, 'show']

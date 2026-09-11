@@ -56,10 +56,11 @@
         <x-menu-item route="guide-usage.index" icon="📊" label="Uso de la Guía" />
 
         <div class="pt-6 pb-2 text-xs uppercase tracking-widest text-green-300 font-bold">
-            Sistema
+            Noticias   
         </div>
 
-        <x-menu-item route="#" icon="⚙️" label="Configuración" />
+<x-menu-item route="avisos.index" icon="📢" label="Avisos" />
+
 
     </nav>
 

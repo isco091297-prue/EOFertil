@@ -22,7 +22,7 @@ use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\ZoneController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GuideUsageController;
-
+use App\Http\Controllers\AvisoController;
 Route::middleware('guest')->group(function () {
 
     Route::get('/', [
@@ -163,7 +163,10 @@ Route::middleware([
         'invoices/{invoice}/annul',
         [InvoiceController::class, 'annul']
     )->name('invoices.annul');
+Route::resource('avisos', AvisoController::class)->except(['show']);
 
+Route::patch('avisos/{aviso}/toggle', [AvisoController::class, 'toggle'])
+    ->name('avisos.toggle');
     /*
     |--------------------------------------------------------------------------
     | Organización
