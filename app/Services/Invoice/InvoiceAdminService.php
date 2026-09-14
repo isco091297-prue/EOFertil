@@ -181,13 +181,13 @@ class InvoiceAdminService
 
             $invoiceItemIds = $invoice->items
                 ->pluck('id')
-                ->map(fn ($id) => (int) $id)
+                ->map(fn($id) => (int) $id)
                 ->sort()
                 ->values()
                 ->all();
 
             $submittedItemIds = collect(array_keys($itemsData))
-                ->map(fn ($id) => (int) $id)
+                ->map(fn($id) => (int) $id)
                 ->sort()
                 ->values()
                 ->all();
@@ -578,11 +578,11 @@ class InvoiceAdminService
                     $participants[$userId] = [
                         'user' => $invoice->user,
                         'warehouse_id' =>
-                            $invoice->user->warehouse_id,
+                        $invoice->user->warehouse_id,
                         'zone_id' =>
-                            $invoice->user->zone_id,
+                        $invoice->user->zone_id,
                         'branch_id' =>
-                            $invoice->user->branch_id,
+                        $invoice->user->branch_id,
                         'sales_total' => 0.0,
                         'cashback_total' => 0.0,
                         'invoice_count' => 0,
@@ -750,23 +750,23 @@ class InvoiceAdminService
     ): void {
         $campaignIdsFromRankings =
             CampaignUserRanking::query()
-                ->where(
-                    'user_id',
-                    $userId
-                )
-                ->pluck(
-                    'cashback_campaign_id'
-                );
+            ->where(
+                'user_id',
+                $userId
+            )
+            ->pluck(
+                'cashback_campaign_id'
+            );
 
         $userInvoiceDates =
             Invoice::query()
-                ->where(
-                    'user_id',
-                    $userId
-                )
-                ->pluck(
-                    'fecha_factura'
-                );
+            ->where(
+                'user_id',
+                $userId
+            )
+            ->pluck(
+                'fecha_factura'
+            );
 
         if (
             $campaignIdsFromRankings->isEmpty() &&
@@ -777,50 +777,50 @@ class InvoiceAdminService
 
         $campaigns =
             CashbackCampaign::query()
-                ->where(function ($query) use (
-                    $campaignIdsFromRankings,
-                    $userInvoiceDates
+            ->where(function ($query) use (
+                $campaignIdsFromRankings,
+                $userInvoiceDates
+            ) {
+                if (
+                    $campaignIdsFromRankings->isNotEmpty()
                 ) {
-                    if (
-                        $campaignIdsFromRankings->isNotEmpty()
-                    ) {
-                        $query->whereIn(
-                            'id',
-                            $campaignIdsFromRankings
-                        );
-                    }
+                    $query->whereIn(
+                        'id',
+                        $campaignIdsFromRankings
+                    );
+                }
 
-                    if (
-                        $userInvoiceDates->isNotEmpty()
-                    ) {
-                        $query->orWhere(function (
-                            $query
-                        ) use ($userInvoiceDates) {
-                            foreach (
-                                $userInvoiceDates as $date
-                            ) {
-                                $query->orWhere(
-                                    function ($query) use (
-                                        $date
-                                    ) {
-                                        $query
-                                            ->whereDate(
-                                                'fecha_inicio',
-                                                '<=',
-                                                $date
-                                            )
-                                            ->whereDate(
-                                                'fecha_fin',
-                                                '>=',
-                                                $date
-                                            );
-                                    }
-                                );
-                            }
-                        );
-                    }
-                })
-                ->get();
+                if (
+                    $userInvoiceDates->isNotEmpty()
+                ) {
+                    $query->orWhere(function (
+                        $query
+                    ) use ($userInvoiceDates) {
+                        foreach (
+                            $userInvoiceDates as $date
+                        ) {
+                            $query->orWhere(
+                                function ($query) use (
+                                    $date
+                                ) {
+                                    $query
+                                        ->whereDate(
+                                            'fecha_inicio',
+                                            '<=',
+                                            $date
+                                        )
+                                        ->whereDate(
+                                            'fecha_fin',
+                                            '>=',
+                                            $date
+                                        );
+                                }
+                            );
+                        }
+                    });
+                }
+            })
+            ->get();
 
         $user = User::findOrFail(
             $userId
@@ -922,13 +922,13 @@ class InvoiceAdminService
 
             $ranking =
                 CampaignUserRanking::query()
-                    ->firstOrNew([
-                        'cashback_campaign_id' =>
-                            $campaign->id,
+                ->firstOrNew([
+                    'cashback_campaign_id' =>
+                    $campaign->id,
 
-                        'user_id' =>
-                            $userId,
-                    ]);
+                    'user_id' =>
+                    $userId,
+                ]);
 
             $ranking->warehouse_id =
                 $user->warehouse_id;
@@ -1042,28 +1042,28 @@ class InvoiceAdminService
     ): InvoiceAudit {
         return InvoiceAudit::create([
             'invoice_id' =>
-                $invoice->id,
+            $invoice->id,
 
             'admin_user_id' =>
-                $adminUserId,
+            $adminUserId,
 
             'accion' =>
-                $accion,
+            $accion,
 
             'motivo' =>
-                $motivo,
+            $motivo,
 
             'estado_anterior' =>
-                $estadoAnterior,
+            $estadoAnterior,
 
             'estado_nuevo' =>
-                $estadoNuevo,
+            $estadoNuevo,
 
             'datos_anteriores' =>
-                $datosAnteriores,
+            $datosAnteriores,
 
             'datos_nuevos' =>
-                $datosNuevos,
+            $datosNuevos,
         ]);
     }
 
@@ -1076,56 +1076,56 @@ class InvoiceAdminService
 
         return [
             'id' =>
-                $invoice->id,
+            $invoice->id,
 
             'numero_factura_original' =>
-                $invoice->numero_factura_original,
+            $invoice->numero_factura_original,
 
             'numero_factura_normalizado' =>
-                $invoice->numero_factura_normalizado,
+            $invoice->numero_factura_normalizado,
 
             'fecha_factura' =>
-                optional(
-                    $invoice->fecha_factura
-                )->format('Y-m-d'),
+            optional(
+                $invoice->fecha_factura
+            )->format('Y-m-d'),
 
             'cashback_campaign_id' =>
-                $invoice->cashback_campaign_id,
+            $invoice->cashback_campaign_id,
 
             'total_factura' =>
-                (float) $invoice->total_factura,
+            (float) $invoice->total_factura,
 
             'total_productos_participantes' =>
-                (float) $invoice->total_productos_participantes,
+            (float) $invoice->total_productos_participantes,
 
             'porcentaje_cashback' =>
-                (float) $invoice->porcentaje_cashback,
+            (float) $invoice->porcentaje_cashback,
 
             'cashback_generado' =>
-                (float) $invoice->cashback_generado,
+            (float) $invoice->cashback_generado,
 
             'estado' =>
-                $invoice->estado,
+            $invoice->estado,
 
             'productos' =>
-                $invoice->items
-                    ->map(function ($item) {
-                        return [
-                            'invoice_item_id' =>
-                                $item->id,
+            $invoice->items
+                ->map(function ($item) {
+                    return [
+                        'invoice_item_id' =>
+                        $item->id,
 
-                            'product_id' =>
-                                $item->product_id,
+                        'product_id' =>
+                        $item->product_id,
 
-                            'product_name' =>
-                                $item->product?->name,
+                        'product_name' =>
+                        $item->product?->name,
 
-                            'valor' =>
-                                (float) $item->valor,
-                        ];
-                    })
-                    ->values()
-                    ->toArray(),
+                        'valor' =>
+                        (float) $item->valor,
+                    ];
+                })
+                ->values()
+                ->toArray(),
         ];
     }
 
