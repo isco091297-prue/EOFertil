@@ -130,6 +130,20 @@ Route::middleware([
         'users',
         UserController::class
     );
+    Route::get(
+    'users/{user}/cleanup',
+    [UserController::class, 'cleanupPreview']
+)->name('users.cleanup.preview');
+
+Route::post(
+    'users/{user}/cleanup',
+    [UserController::class, 'clean']
+)->name('users.cleanup');
+
+Route::get(
+    'users/{user}/delete',
+    [UserController::class, 'deletePreview']
+)->name('users.delete.preview');
 
     Route::patch(
         'users/{user}/approve',
