@@ -520,15 +520,11 @@ class InvoiceAdminService
             |--------------------------------------------------------------------------
             */
 
-            $invoices = Invoice::query()
+            $invoiceQuery = Invoice::query()
                 ->with([
                     'user',
                     'branch',
                 ])
-                ->where(
-                    'cashback_campaign_id',
-                    $campaign->id
-                )
                 ->whereIn(
                     'estado',
                     [
@@ -545,7 +541,16 @@ class InvoiceAdminService
                     'fecha_factura',
                     '<=',
                     $campaign->fecha_fin
-                )
+                );
+
+            if ($isCashbackRanking) {
+                $invoiceQuery->where(
+                    'cashback_campaign_id',
+                    $campaign->id
+                );
+            }
+
+            $invoices = $invoiceQuery
                 ->orderBy('id')
                 ->get();
 
@@ -844,7 +849,7 @@ class InvoiceAdminService
                 continue;
             }
 
-            $invoices = Invoice::query()
+            $invoiceQuery = Invoice::query()
                 ->with([
                     'user',
                     'branch',
@@ -852,10 +857,6 @@ class InvoiceAdminService
                 ->where(
                     'user_id',
                     $userId
-                )
-                ->where(
-                    'cashback_campaign_id',
-                    $campaign->id
                 )
                 ->whereIn(
                     'estado',
@@ -873,7 +874,16 @@ class InvoiceAdminService
                     'fecha_factura',
                     '<=',
                     $campaign->fecha_fin
-                )
+                );
+
+            if ($isCashbackRanking) {
+                $invoiceQuery->where(
+                    'cashback_campaign_id',
+                    $campaign->id
+                );
+            }
+
+            $invoices = $invoiceQuery
                 ->orderBy('id')
                 ->get();
 
