@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
+use App\Models\Warehouse;
 use App\Services\Invoice\InvoiceAdminService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,7 @@ class InvoiceController extends Controller
     {
         $search = request('search');
         $estado = request('estado');
+        $warehouseId = request('warehouse_id');
 
         $invoices = Invoice::query()
             ->with([
@@ -69,14 +71,28 @@ class InvoiceController extends Controller
                     $estado
                 );
             })
+            ->when($warehouseId, function ($query) use ($warehouseId) {
 
+                $query->whereHas('user', function ($query) use ($warehouseId) {
+
+                    $query->where(
+                        'warehouse_id',
+                        $warehouseId
+                    );
+                });
+            })
             ->latest()
             ->paginate(15)
             ->withQueryString();
+        $warehouses = Warehouse::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
         return view(
             'invoices.index',
-            compact('invoices')
+            compact('invoices',
+            'warehouses')
         );
     }
 
@@ -224,9 +240,10 @@ class InvoiceController extends Controller
      *
      * IMPORTANTE:
      *
-     * El administrador SOLO puede modificar:
+     * El administrador puede modificar:
      *
      * - valor de cada producto registrado.
+     * - agregar productos EOFERTIL.
      * - motivo de la modificación.
      *
      * NO puede modificar desde este formulario:
@@ -266,13 +283,39 @@ class InvoiceController extends Controller
                 'min:0',
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Productos nuevos
+            |--------------------------------------------------------------------------
+            |
+            | Son opcionales porque una modificación puede seguir
+            | siendo únicamente de valores.
+            |
+            */
+
+            'new_items' => [
+                'nullable',
+                'array',
+            ],
+
+            'new_items.*.product_id' => [
+                'required',
+                'integer',
+                'exists:products,id',
+            ],
+
+            'new_items.*.valor' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+
             'motivo' => [
                 'required',
                 'string',
                 'max:1000',
             ],
         ]);
-
 
         /*
         |--------------------------------------------------------------------------
@@ -284,7 +327,6 @@ class InvoiceController extends Controller
             (string) $validated['motivo']
         );
 
-
         if ($motivo === '') {
 
             return back()
@@ -294,7 +336,6 @@ class InvoiceController extends Controller
                     'El motivo de la modificación es obligatorio.',
                 ]);
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -318,7 +359,6 @@ class InvoiceController extends Controller
             )
             ->values();
 
-
         $submittedItemIds = collect(
             array_keys(
                 $validated['items']
@@ -329,7 +369,6 @@ class InvoiceController extends Controller
             )
             ->values();
 
-
         /*
         |--------------------------------------------------------------------------
         | Todos los items enviados deben pertenecer a la factura
@@ -338,7 +377,6 @@ class InvoiceController extends Controller
 
         $invalidItemIds = $submittedItemIds
             ->diff($invoiceItemIds);
-
 
         if ($invalidItemIds->isNotEmpty()) {
 
@@ -349,7 +387,6 @@ class InvoiceController extends Controller
                     'Se detectaron productos que no pertenecen a esta factura.',
                 ]);
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -364,7 +401,6 @@ class InvoiceController extends Controller
         $missingItemIds = $invoiceItemIds
             ->diff($submittedItemIds);
 
-
         if ($missingItemIds->isNotEmpty()) {
 
             return back()
@@ -374,7 +410,6 @@ class InvoiceController extends Controller
                     'Debes mantener todos los productos registrados en la factura.',
                 ]);
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -427,12 +462,21 @@ class InvoiceController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Productos modificados
+            | Productos existentes modificados
             |--------------------------------------------------------------------------
             */
 
             'items' =>
             $validated['items'],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Productos nuevos
+            |--------------------------------------------------------------------------
+            */
+
+            'new_items' =>
+            $validated['new_items'] ?? [],
 
             /*
             |--------------------------------------------------------------------------
@@ -443,7 +487,6 @@ class InvoiceController extends Controller
             'motivo' =>
             $motivo,
         ];
-
 
         /*
         |--------------------------------------------------------------------------

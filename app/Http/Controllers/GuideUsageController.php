@@ -50,11 +50,19 @@ class GuideUsageController extends Controller
         */
 
         if ($dateFrom) {
-            $query->whereDate('created_at', '>=', $dateFrom);
+            $query->whereDate(
+                'guide_usages.created_at',
+                '>=',
+                $dateFrom
+            );
         }
 
         if ($dateTo) {
-            $query->whereDate('created_at', '<=', $dateTo);
+            $query->whereDate(
+                'guide_usages.created_at',
+                '<=',
+                $dateTo
+            );
         }
 
         /*
@@ -76,7 +84,10 @@ class GuideUsageController extends Controller
         */
 
         if ($userId) {
-            $query->where('user_id', $userId);
+            $query->where(
+                'guide_usages.user_id',
+                $userId
+            );
         }
 
         /*
@@ -86,7 +97,10 @@ class GuideUsageController extends Controller
         */
 
         if ($cropId) {
-            $query->where('crop_id', $cropId);
+            $query->where(
+                'guide_usages.crop_id',
+                $cropId
+            );
         }
 
         /*
@@ -96,7 +110,10 @@ class GuideUsageController extends Controller
         */
 
         if ($problemId) {
-            $query->where('problem_id', $problemId);
+            $query->where(
+                'guide_usages.problem_id',
+                $problemId
+            );
         }
 
         /*
@@ -106,7 +123,7 @@ class GuideUsageController extends Controller
         */
 
         $usages = (clone $query)
-            ->latest('created_at')
+            ->latest('guide_usages.created_at')
             ->paginate(25)
             ->withQueryString();
 
@@ -125,8 +142,8 @@ class GuideUsageController extends Controller
         */
 
         $usuariosActivos = (clone $query)
-            ->distinct('user_id')
-            ->count('user_id');
+            ->distinct('guide_usages.user_id')
+            ->count('guide_usages.user_id');
 
         /*
         |--------------------------------------------------------------------------
@@ -135,9 +152,11 @@ class GuideUsageController extends Controller
         */
 
         $rankingUsuarios = (clone $query)
-            ->selectRaw('user_id, COUNT(*) as total')
+            ->selectRaw(
+                'guide_usages.user_id, COUNT(*) as total'
+            )
             ->with('user.branch')
-            ->groupBy('user_id')
+            ->groupBy('guide_usages.user_id')
             ->orderByDesc('total')
             ->get();
 
@@ -148,8 +167,18 @@ class GuideUsageController extends Controller
         */
 
         $rankingSucursales = (clone $query)
-            ->join('users', 'guide_usages.user_id', '=', 'users.id')
-            ->join('branches', 'users.branch_id', '=', 'branches.id')
+            ->join(
+                'users',
+                'guide_usages.user_id',
+                '=',
+                'users.id'
+            )
+            ->join(
+                'branches',
+                'users.branch_id',
+                '=',
+                'branches.id'
+            )
             ->selectRaw(
                 'users.branch_id, branches.name, COUNT(*) as total'
             )
@@ -167,7 +196,12 @@ class GuideUsageController extends Controller
         */
 
         $rankingCultivos = (clone $query)
-            ->join('crops', 'guide_usages.crop_id', '=', 'crops.id')
+            ->join(
+                'crops',
+                'guide_usages.crop_id',
+                '=',
+                'crops.id'
+            )
             ->selectRaw(
                 'guide_usages.crop_id, crops.name, COUNT(*) as total'
             )
@@ -185,7 +219,12 @@ class GuideUsageController extends Controller
         */
 
         $rankingProblemas = (clone $query)
-            ->join('problems', 'guide_usages.problem_id', '=', 'problems.id')
+            ->join(
+                'problems',
+                'guide_usages.problem_id',
+                '=',
+                'problems.id'
+            )
             ->selectRaw(
                 'guide_usages.problem_id, problems.name, COUNT(*) as total'
             )

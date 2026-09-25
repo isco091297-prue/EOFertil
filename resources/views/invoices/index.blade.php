@@ -35,7 +35,7 @@
 
         <form method="GET" class="mb-6">
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
 
                 <x-input type="text" name="search" placeholder="Buscar factura, nombre o cédula..."
                     value="{{ request('search') }}" />
@@ -57,6 +57,20 @@
                     <option value="anulada" @selected(request('estado') === 'anulada')>
                         Anuladas
                     </option>
+
+                </select>
+
+                <select name="warehouse_id" class="border border-gray-300 rounded-xl px-4 py-3">
+
+                    <option value="">
+                        Todos los almacenes
+                    </option>
+
+                    @foreach ($warehouses as $warehouse)
+                        <option value="{{ $warehouse->id }}" @selected((string) request('warehouse_id') === (string) $warehouse->id)>
+                            {{ $warehouse->name }}
+                        </option>
+                    @endforeach
 
                 </select>
 

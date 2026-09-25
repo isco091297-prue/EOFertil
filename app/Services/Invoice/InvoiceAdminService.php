@@ -6,6 +6,8 @@ use App\Models\CashbackCampaign;
 use App\Models\CampaignUserRanking;
 use App\Models\Invoice;
 use App\Models\InvoiceAudit;
+use App\Models\InvoiceItem;
+use App\Models\Product;
 use App\Models\User;
 use App\Services\Cashback\CashbackService;
 use App\Services\Ranking\RankingCalculatorService;
@@ -117,10 +119,11 @@ class InvoiceAdminService
      *
      * 1. Revierte cashback anterior.
      * 2. Cambia valores.
-     * 3. Calcula nuevo cashback.
-     * 4. Acredita nuevo cashback.
-     * 5. Mantiene procesando.
-     * 6. Reconstruye ranking.
+     * 3. Agrega productos nuevos EOFERTIL si corresponde.
+     * 4. Calcula nuevo cashback.
+     * 5. Acredita nuevo cashback.
+     * 6. Mantiene procesando.
+     * 7. Reconstruye ranking.
      */
     public function update(
         Invoice $invoice,
@@ -173,9 +176,17 @@ class InvoiceAdminService
                 );
             }
 
+            $newItemsData = $data['new_items'] ?? [];
+
+            if (!is_array($newItemsData)) {
+                throw new RuntimeException(
+                    'Los productos nuevos no son válidos.'
+                );
+            }
+
             /*
             |--------------------------------------------------------------------------
-            | Verificar que lleguen todos los productos
+            | Verificar que lleguen todos los productos existentes
             |--------------------------------------------------------------------------
             */
 
@@ -200,7 +211,7 @@ class InvoiceAdminService
 
             /*
             |--------------------------------------------------------------------------
-            | Validar valores
+            | Validar valores de productos existentes
             |--------------------------------------------------------------------------
             */
 
@@ -240,6 +251,128 @@ class InvoiceAdminService
 
             /*
             |--------------------------------------------------------------------------
+            | Validar productos nuevos
+            |--------------------------------------------------------------------------
+            */
+
+            $existingProductIds = $invoice->items
+                ->pluck('product_id')
+                ->map(fn($id) => (int) $id)
+                ->all();
+
+            $newProductIds = [];
+
+            foreach ($newItemsData as $newItemData) {
+                if (!is_array($newItemData)) {
+                    throw new RuntimeException(
+                        'Los datos de uno de los productos nuevos no son válidos.'
+                    );
+                }
+
+                if (
+                    !isset($newItemData['product_id']) ||
+                    !is_numeric($newItemData['product_id'])
+                ) {
+                    throw new RuntimeException(
+                        'Debe seleccionar un producto EOFERTIL válido.'
+                    );
+                }
+
+                if (
+                    !isset($newItemData['valor']) ||
+                    !is_numeric($newItemData['valor'])
+                ) {
+                    throw new RuntimeException(
+                        'El valor de uno de los productos nuevos no es válido.'
+                    );
+                }
+
+                $productId = (int) $newItemData['product_id'];
+
+                $valor = round(
+                    (float) $newItemData['valor'],
+                    2
+                );
+
+                if ($valor < 0) {
+                    throw new RuntimeException(
+                        'El valor de un producto no puede ser negativo.'
+                    );
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | No permitir productos que ya existen en la factura
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    in_array(
+                        $productId,
+                        $existingProductIds,
+                        true
+                    )
+                ) {
+                    throw new RuntimeException(
+                        'El producto seleccionado ya está registrado en esta factura.'
+                    );
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | No permitir duplicar productos nuevos
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    in_array(
+                        $productId,
+                        $newProductIds,
+                        true
+                    )
+                ) {
+                    throw new RuntimeException(
+                        'No se puede agregar el mismo producto más de una vez.'
+                    );
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Buscar producto y validar marca
+                |--------------------------------------------------------------------------
+                */
+
+                $product = Product::query()
+                    ->with('brand')
+                    ->whereKey($productId)
+                    ->where('is_active', true)
+                    ->first();
+
+                if (!$product) {
+                    throw new RuntimeException(
+                        'El producto seleccionado no existe o está inactivo.'
+                    );
+                }
+
+                $brandName = strtoupper(
+                    trim(
+                        (string) (
+                            $product->brand?->name ?? ''
+                        )
+                    )
+                );
+
+                if ($brandName !== 'EOFERTIL') {
+                    throw new RuntimeException(
+                        'Solo se pueden agregar productos de la marca EOFERTIL.'
+                    );
+                }
+
+                $newProductIds[] = $productId;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
             | Revertir cashback que ya recibió el usuario
             |--------------------------------------------------------------------------
             */
@@ -251,7 +384,7 @@ class InvoiceAdminService
 
             /*
             |--------------------------------------------------------------------------
-            | Actualizar productos
+            | Actualizar productos existentes
             |--------------------------------------------------------------------------
             */
 
@@ -272,6 +405,28 @@ class InvoiceAdminService
 
             /*
             |--------------------------------------------------------------------------
+            | Agregar productos nuevos
+            |--------------------------------------------------------------------------
+            */
+
+            foreach ($newItemsData as $newItemData) {
+                InvoiceItem::create([
+                    'invoice_id' =>
+                    $invoice->id,
+
+                    'product_id' =>
+                    (int) $newItemData['product_id'],
+
+                    'valor' =>
+                    round(
+                        (float) $newItemData['valor'],
+                        2
+                    ),
+                ]);
+            }
+
+            /*
+            |--------------------------------------------------------------------------
             | Recalcular totales
             |--------------------------------------------------------------------------
             */
@@ -281,7 +436,8 @@ class InvoiceAdminService
                 2
             );
 
-            $invoice->total_factura = $totalParticipantes;
+            $invoice->total_factura =
+                $totalParticipantes;
 
             $invoice->total_productos_participantes =
                 $totalParticipantes;
@@ -310,6 +466,17 @@ class InvoiceAdminService
             );
 
             $invoice->refresh();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Guardar auditoría
+            |--------------------------------------------------------------------------
+            |
+            | invoiceSnapshot() contiene los productos anteriores
+            | y los nuevos, por lo que queda registrado exactamente
+            | qué producto fue agregado.
+            |--------------------------------------------------------------------------
+            */
 
             $this->createAudit(
                 invoice: $invoice,
@@ -520,11 +687,15 @@ class InvoiceAdminService
             |--------------------------------------------------------------------------
             */
 
-            $invoiceQuery = Invoice::query()
+            $invoices = Invoice::query()
                 ->with([
                     'user',
                     'branch',
                 ])
+                ->where(
+                    'cashback_campaign_id',
+                    $campaign->id
+                )
                 ->whereIn(
                     'estado',
                     [
@@ -541,16 +712,7 @@ class InvoiceAdminService
                     'fecha_factura',
                     '<=',
                     $campaign->fecha_fin
-                );
-
-            if ($isCashbackRanking) {
-                $invoiceQuery->where(
-                    'cashback_campaign_id',
-                    $campaign->id
-                );
-            }
-
-            $invoices = $invoiceQuery
+                )
                 ->orderBy('id')
                 ->get();
 
