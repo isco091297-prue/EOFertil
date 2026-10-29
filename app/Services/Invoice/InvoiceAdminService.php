@@ -687,15 +687,13 @@ class InvoiceAdminService
             |--------------------------------------------------------------------------
             */
 
-            $invoices = Invoice::query()
+
+            $invoiceQuery = Invoice::query()
                 ->with([
                     'user',
                     'branch',
+                    'cashbackCampaign',
                 ])
-                ->where(
-                    'cashback_campaign_id',
-                    $campaign->id
-                )
                 ->whereIn(
                     'estado',
                     [
@@ -712,9 +710,32 @@ class InvoiceAdminService
                     'fecha_factura',
                     '<=',
                     $campaign->fecha_fin
-                )
+                );
+
+            if ($isCashbackRanking) {
+                $invoiceQuery->where(
+                    'cashback_campaign_id',
+                    $campaign->id
+                );
+            } else {
+                $invoiceQuery->whereHas(
+                    'cashbackCampaign',
+                    function ($query) {
+                        $query->whereIn(
+                            'campaign_type',
+                            [
+                                'cashback',
+                                'ranking_accumulated',
+                            ]
+                        );
+                    }
+                );
+            }
+
+            $invoices = $invoiceQuery
                 ->orderBy('id')
                 ->get();
+
 
             /*
             |--------------------------------------------------------------------------
@@ -1015,7 +1036,17 @@ class InvoiceAdminService
                 ->with([
                     'user',
                     'branch',
+                    'cashbackCampaign',
                 ])
+                ->whereHas('cashbackCampaign', function ($query) {
+                    $query->whereIn(
+                        'campaign_type',
+                        [
+                            'cashback',
+                            'ranking_accumulated',
+                        ]
+                    );
+                })
                 ->where(
                     'user_id',
                     $userId

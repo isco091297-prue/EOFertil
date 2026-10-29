@@ -36,7 +36,7 @@ class UpdateCashbackCampaignRequest extends FormRequest
 
             'campaign_type' => [
                 'required',
-                'in:cashback,ranking_accumulated',
+                'in:cashback,ranking_accumulated,beneficio_directo',
             ],
 
             /*
@@ -50,7 +50,7 @@ class UpdateCashbackCampaignRequest extends FormRequest
                 'numeric',
                 'min:0.01',
                 'max:100',
-                'required_if:campaign_type,cashback',
+                'required_if:campaign_type,cashback,beneficio_directo',
             ],
 
             'valor_alerta_factura' => [

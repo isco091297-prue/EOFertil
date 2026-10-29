@@ -46,28 +46,27 @@
                     <span class="text-red-600">*</span>
 
                 </label>
-
                 <select id="campaign_type" name="campaign_type"
                     class="w-full rounded-xl border border-gray-300 px-4 py-3">
 
                     <option value="cashback" @selected(old('campaign_type', $cashbackCampaign->campaign_type ?? '') == 'cashback')>
-
                         Cashback
-
                     </option>
 
                     <option value="ranking_accumulated" @selected(old('campaign_type', $cashbackCampaign->campaign_type ?? '') == 'ranking_accumulated')>
-
                         Ranking Acumulado
+                    </option>
 
+                    <option value="beneficio_directo" @selected(old('campaign_type', $cashbackCampaign->campaign_type ?? '') == 'beneficio_directo')>
+                        Beneficio Directo
                     </option>
 
                 </select>
 
                 <p class="mt-2 text-sm text-gray-500">
-
-                    El Ranking Cashback se configurará dentro de una campaña Cashback.
-
+                    Cashback calcula el porcentaje y permite activar el Ranking Cashback.
+                    Ranking Acumulado conserva su ranking independiente.
+                    Beneficio Directo calcula cashback sin participar en los rankings.
                 </p>
 
             </div>
@@ -559,19 +558,28 @@
         }
 
         function refreshCampaign() {
+            const type = campaignType.value;
 
-            if (campaignType.value === 'cashback') {
+            const isCashback = type === 'cashback';
+            const isBeneficioDirecto = type === 'beneficio_directo';
 
+            // Cashback y Beneficio Directo calculan el porcentaje.
+            if (isCashback || isBeneficioDirecto) {
                 cashbackConfig.classList.remove('hidden');
-                rankingCashback.classList.remove('hidden');
-
             } else {
-
                 cashbackConfig.classList.add('hidden');
-                rankingCashback.classList.add('hidden');
-
             }
 
+            // Solo las campañas Cashback pueden activar este ranking.
+            if (isCashback) {
+                rankingCashback.classList.remove('hidden');
+                enableRanking.disabled = false;
+            } else {
+                rankingCashback.classList.add('hidden');
+                enableRanking.checked = false;
+                enableRanking.disabled = true;
+                rankingOptions.classList.add('hidden');
+            }
         }
 
         function refreshRanking() {

@@ -17,12 +17,51 @@ class CashbackModuleService
      * Esta campaña es independiente del ranking acumulado.
      * El ranking acumulado se consulta mediante su propio endpoint.
      */
-    public function currentCampaign(): ?CashbackCampaign
-    {
-        return CashbackCampaign::vigentes()
-            ->where('campaign_type', 'cashback')
+    public function currentCampaign(
+        User $user
+    ): ?CashbackCampaign {
+        $campaigns = CashbackCampaign::vigentes()
+            ->whereIn('campaign_type', [
+                'cashback',
+                'beneficio_directo',
+            ])
+            ->where(function ($query) use ($user) {
+                $query->where('participant_type', 'all');
+
+                if ($user->warehouse_id) {
+                    $query->orWhere(function ($q) use ($user) {
+                        $q->where('participant_type', 'warehouse')
+                            ->whereHas('scopes', function ($scope) use ($user) {
+                                $scope->where('warehouse_id', $user->warehouse_id)
+                                    ->where('required', true);
+                            });
+                    });
+                }
+
+                if ($user->zone_id) {
+                    $query->orWhere(function ($q) use ($user) {
+                        $q->where('participant_type', 'zone')
+                            ->whereHas('scopes', function ($scope) use ($user) {
+                                $scope->where('zone_id', $user->zone_id)
+                                    ->where('required', true);
+                            });
+                    });
+                }
+
+                if ($user->branch_id) {
+                    $query->orWhere(function ($q) use ($user) {
+                        $q->where('participant_type', 'branch')
+                            ->whereHas('scopes', function ($scope) use ($user) {
+                                $scope->where('branch_id', $user->branch_id)
+                                    ->where('required', true);
+                            });
+                    });
+                }
+            })
             ->latest('fecha_inicio')
             ->first();
+
+        return $campaigns;
     }
 
     /**

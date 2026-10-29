@@ -210,13 +210,44 @@ class InvoiceService
                 'La campaña de cashback está inactiva.'
             );
         }
+        if ($campaign->participant_type !== 'all') {
+            $scopeQuery = $campaign->scopes()
+                ->where('required', true);
 
+            $participa = match ($campaign->participant_type) {
+                'warehouse' => $user->warehouse_id
+                    && (clone $scopeQuery)
+                    ->where('warehouse_id', $user->warehouse_id)
+                    ->exists(),
+
+                'zone' => $user->zone_id
+                    && (clone $scopeQuery)
+                    ->where('zone_id', $user->zone_id)
+                    ->exists(),
+
+                'branch' => (clone $scopeQuery)
+                    ->where('branch_id', $branch->id)
+                    ->exists(),
+
+                default => false,
+            };
+
+            if (!$participa) {
+                throw new Exception(
+                    'Tu almacén, zona o sucursal no participa en esta campaña.'
+                );
+            }
+        }
         if (
-            $campaign->campaign_type === 'cashback' &&
-            $campaign->porcentaje <= 0
+            in_array(
+                $campaign->campaign_type,
+                ['cashback', 'beneficio_directo'],
+                true
+            ) &&
+            (float) $campaign->porcentaje <= 0
         ) {
             throw new Exception(
-                'La campaña de cashback no tiene un porcentaje válido.'
+                'La campaña no tiene un porcentaje de cashback válido.'
             );
         }
 

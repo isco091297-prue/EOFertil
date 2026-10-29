@@ -31,12 +31,13 @@ class CashbackController extends Controller
     /**
      * Obtener la campaña vigente.
      */
-    public function currentCampaign()
+    public function currentCampaign(Request $request)
     {
         try {
 
-            $campaign = $this->cashbackModuleService->currentCampaign();
-
+            $campaign = $this->cashbackModuleService->currentCampaign(
+                $request->user()
+            );
             return ApiResponse::success(
                 $campaign
                     ? new CashbackCampaignResource($campaign)

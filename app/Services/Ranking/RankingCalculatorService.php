@@ -23,7 +23,15 @@ class RankingCalculatorService
         $invoice->loadMissing([
             'user',
             'branch',
+            'cashbackCampaign',
         ]);
+
+        if (
+            $invoice->cashbackCampaign?->campaign_type
+            === 'beneficio_directo'
+        ) {
+            return;
+        }
 
         /*
         |--------------------------------------------------------------------------
